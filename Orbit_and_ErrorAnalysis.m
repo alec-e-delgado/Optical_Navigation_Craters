@@ -1,9 +1,16 @@
 clc; close all; clear;
 
-distance = 35000; % current distance away from moon surface (need units)
+altitude = 35000; % current distance away from moon surface (need units)
 moon_angle = 90; % incidence angle with moon surface (degrees)
+radius_Moon = 1.7374e6; % m
+distance_sc = altitude+radius_Moon; % m
 
-[angular_errors, x_2, y_2, z_2] = angular_error_calc(distance, moon_angle);
+% Calculate position vector of spacecraft used to locate craters
+r_sc_I = [0.4811; 0.2580; 0.8379]*(distance_sc); % m
+
+[angular_errors,sc_c_bearing,x_2, y_2, z_2] = angular_error_calc(altitude, moon_angle);
+
+[r_craters_I, r_craters_aux] = crater_pos(r_sc_I, sc_c_bearing);
 
 % --- Initialize figure for 3D error cone plot ---
 clf; hold on; view(3);
@@ -260,6 +267,35 @@ axis equal;
 view(3);
 hold off;
 
+% plot of craters 
+
+% plot in the auxiliary reference frame
+figure
+axis equal
+moon_sphere = surf(xsphere, ysphere, zsphere);
+set(moon_sphere, 'FaceColor', [0.5 0.5 0.5]); 
+hold on 
+plot3(r_craters_aux(1,:), r_craters_aux(2,:), r_craters_aux(3,:), 'rx', 'MarkerSize',2, 'LineWidth',1.5)
+plot3(distance_sc, 0, 0, 'b*', 'MarkerSize',5, 'LineWidth',2)
+xlabel('x-axis (m)')
+ylabel('y-axis (m)')
+zlabel('z-axis (m)')
+title('Auxiliary reference frame')
+text(distance_sc, 0, 0, 'SC', 'Color',[1 1 1])
+
+% plot in the inertial reference frame
+figure;
+axis equal
+moon_sphere = surf(xsphere, ysphere, zsphere);
+set(moon_sphere, 'FaceColor', [0.5 0.5 0.5]); 
+hold on 
+plot3(r_craters_I(1,:), r_craters_I(2,:), r_craters_I(3,:), 'yx', 'MarkerSize',2, 'LineWidth',1.5)
+plot3(r_sc_I(1),r_sc_I(2), r_sc_I(3), 'b*', 'MarkerSize',5, 'LineWidth',2)
+xlabel('x-axis (m)')
+ylabel('y-axis (m)')
+zlabel('z-axis (m)')
+title('Inertial reference frame centered at the Moon')
+text(r_sc_I(1), r_sc_I(2), r_sc_I(3), 'SC', 'Color',[1 1 1])
 
 
 % Equations of motion and STM propagation for two-body problem
