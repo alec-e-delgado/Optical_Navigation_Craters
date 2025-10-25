@@ -3,65 +3,6 @@ clc; close all; clear;
 distance = 35000; % current distance away from moon surface (need units)
 moon_angle = 90; % incidence angle with moon surface (degrees)
 
-% load('discretized_results.mat')
-% 
-% % --- Select indices where range ≤ distance and moon-angle ≤ moon_angle ---
-% vec_find_range        = find(discretize_range <= distance);
-% vec_find_moonangle    = find(discretize_moon_angle <= moon_angle);
-% 
-% % --- Slice the 8-D dataset at those index limits ---
-% sliced_data = discretized_data(2,2,1:3, ...
-%     vec_find_moonangle(end), vec_find_range(end), :,:,2);
-% 
-% % --- Extract the detection counts matrix ---
-% num_data = squeeze(sliced_data(1,1,1,1,1,:,:,1));
-% 
-% % --- Find non-zero entries and their linear indices ---
-% [vec_find_nonzero_row, vec_find_nonzero_col] = find(num_data ~= 0);
-% linear_idx = sub2ind(size(num_data), vec_find_nonzero_row, vec_find_nonzero_col);
-% 
-% % --- Pull out mean/std matrices and select only non-zero points ---
-% mean_data_matrix = squeeze(sliced_data(1,1,2,1,1,:,: ,1));
-% std_data_matrix  = squeeze(sliced_data(1,1,3,1,1,:,: ,1));
-% mean_data        = mean_data_matrix(linear_idx);
-% std_data         = std_data_matrix(linear_idx);
-% number_nonzero   = num_data(linear_idx);
-% 
-% % --- Convert matrix indices into physical angles & radii ---
-% sc_inc_nonzero = discretize_sc_inc_angle(vec_find_nonzero_row);
-% radius_nonzero = discretize_radius(vec_find_nonzero_col);
-% 
-% % --- Package results into a summary matrix (or empty if none) ---
-% matrix_detections = [ ...
-%     number_nonzero(:), mean_data(:), std_data(:), ...
-%     sc_inc_nonzero(:), radius_nonzero(:) ];
-% 
-% % ==================== Monte Carlo error simulation ====================
-% 
-% % --- Round detection counts to integer crater numbers ---
-% num_craters = round(number_nonzero);
-% 
-% % --- Repeat each statistic by crater for sampling ---
-% expanded_mean_data = repelem(mean_data(:), num_craters);
-% expanded_std_data  = repelem(std_data(:),  num_craters);
-% expanded_sc_inc    = repelem(sc_inc_nonzero(:), num_craters);
-% expanded_radius    = repelem(radius_nonzero(:), num_craters);
-% repeat_matrix_detections = [expanded_mean_data, expanded_std_data, expanded_sc_inc, expanded_radius];
-% final_matrix = [];
-% 
-% % --- Generate angular error deviations for each crater ---
-% angular_errors = normrnd(repeat_matrix_detections(:,1), repeat_matrix_detections(:,2));
-% 
-% % --- Create random angles [0, 2π) ---
-% rand_theta = 2 * pi() * rand(1, length(angular_errors));
-% rand_theta = rand_theta';
-% angles_matrix = [angular_errors, rand_theta];
-% 
-% % --- Project spherical offsets into 3D vectors ---
-% x_2 = cos(angles_matrix(:,1));                             
-% y_2 = sin(angles_matrix(:,1)) .* cos(angles_matrix(:,2));
-% z_2 = sin(angles_matrix(:,1)) .* sin(angles_matrix(:,2));
-
 [angular_errors, x_2, y_2, z_2] = angular_error_calc(distance, moon_angle);
 
 % --- Initialize figure for 3D error cone plot ---
