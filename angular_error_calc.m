@@ -1,4 +1,4 @@
-function [angular_errors, x_2, y_2, z_2] = angular_error_calc(distance, moon_angle)
+function [angular_errors,sc_c_bearing,x_2, y_2, z_2] = angular_error_calc(distance, moon_angle)
 %ANGULAR_ERROR_CALC generates angular errors along a normal distribution
 %
 % INPUTS
@@ -10,6 +10,8 @@ function [angular_errors, x_2, y_2, z_2] = angular_error_calc(distance, moon_ang
 %   associated with the detected craters following a normal distribution
 %   -x_2,y_2,z_2: coordinates of vectors that display the angular errors
 %   from the true angles of the craters
+%   -sc_c_bearing: bearing angle between the crater center and the
+%   spacecraft
 %
 % ADDITIONAL INFORMATION
 %   - This function loads the file 'discretized_results.mat' that provides
@@ -54,6 +56,8 @@ function [angular_errors, x_2, y_2, z_2] = angular_error_calc(distance, moon_ang
     expanded_sc_inc    = repelem(sc_inc_nonzero(:), num_craters);
     expanded_radius    = repelem(radius_nonzero(:), num_craters);
     repeat_matrix_detections = [expanded_mean_data, expanded_std_data, expanded_sc_inc, expanded_radius];
+
+    sc_c_bearing = expanded_sc_inc; % output
     
     % --- Generate angular error deviations for each crater ---
     angular_errors = normrnd(repeat_matrix_detections(:,1), repeat_matrix_detections(:,2));
