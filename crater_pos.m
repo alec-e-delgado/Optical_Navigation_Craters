@@ -1,4 +1,4 @@
-function [r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearing)
+function [r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %CRATER_POS
 %  - This script calculaes the positions of detected craters defined in
@@ -9,6 +9,8 @@ function [r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearing)
 % INPUTS
 %  - altitude: the altitude above the lunar surface (m)
 %  - sc_bearing: bearing angles of spacecraft and crater (deg) 
+%  - std_expanded: standard deviation of angular error for each crater (rad)
+%  - mean_expanded: mean of engular error for each crater (rad)
 %
 % OUTPUTS
 %  - r_crater_I: location of crater in intertial reference frame (m)
@@ -34,6 +36,10 @@ sc_bearing_rad = sc_bearing*pi/180; % convert to rad
 % Calculate angle between r_sc_I and r_sc_I - r_c_I (alpha) using law of sines
 distance_sc = norm(r_sc_I); % magnitude
 alpha = asin(radius_Moon*sin(pi-sc_bearing_rad)/distance_sc);
+
+% Calculate and add angular errors to alpha (measurement)
+angular_errors = normrnd(mean_expanded, std_expanded);
+alpha = alpha+angular_errors; % propagage errors into angles
 
 % Calculate angle between r_sc_I and r_c_I (gamma) 
 beta = 180*pi/180 - sc_bearing_rad; % angle between r_c_I and r_sc_I - r_c_I

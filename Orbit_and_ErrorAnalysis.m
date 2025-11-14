@@ -8,9 +8,14 @@ distance_sc = altitude+radius_Moon; % m
 % Calculate position vector of spacecraft used to locate craters
 r_sc_I = [0.4811; 0.2580; 0.8379]*(distance_sc); % m
 
-[angular_errors,sc_c_bearing,x_2, y_2, z_2] = angular_error_calc(altitude, moon_angle);
+[angular_errors,repeat_matrix_detections,x_2, y_2, z_2] = angular_error_calc(altitude, moon_angle);
 
-[r_craters_I, r_craters_aux] = crater_pos(r_sc_I, sc_c_bearing);
+% Extract vectors from repeat_matrix
+sc_c_bearing = repeat_matrix_detections(:,3);
+std_expanded = repeat_matrix_detections(:,2);
+mean_expanded = repeat_matrix_detections(:,1);
+
+[r_craters_I, r_craters_aux] = crater_pos(r_sc_I, sc_c_bearing, std_expanded, mean_expanded);
 
 % --- Initialize figure for 3D error cone plot ---
 clf; hold on; view(3);
