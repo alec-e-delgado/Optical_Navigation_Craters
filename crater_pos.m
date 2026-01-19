@@ -163,7 +163,8 @@ r_crater_I2_nom = R_auxLOS_I*(r_crater_LOS_nom-[0;distance_sc;0]);
 
 
 % Calculate angular errors 
-angular_errors = normrnd(0, std_expanded);
+% angular_errors = normrnd(0, std_expanded);
+angular_errors = normrnd(mean_expanded, std_expanded);
 rand_theta = 2*pi* rand(1,length(angular_errors)); % random angles in circle
 rand_theta = rand_theta';
 
@@ -212,10 +213,10 @@ std_azimuth_num = std(azimuth);
 std_elevation_num = std(elevation);
 
 % Analytical Standard Deviations
-cos(azimuth_nom)
-cos(elevation_nom)
-std_azimuth_analytical = (std_expanded(1)/sqrt(2))/cos(azimuth_nom);
-std_elevation_analytical = std_expanded(1)/sqrt(2)/cos(elevation_nom);
+% std_azimuth_analytical = (std_expanded(1)/sqrt(2))/cos(azimuth_nom);
+% std_elevation_analytical = std_expanded(1)/sqrt(2)/cos(elevation_nom);
+std_elevation_analytical = std_expanded(1)/sqrt((4-pi)/2);
+std_azimuth_analytical = std_expanded(1)/sqrt((4-pi)/2)/cos(elevation_nom);
 
 num_error = length(std_expanded);
 
@@ -273,10 +274,10 @@ zsphere = radius_Moon * zsphere;
 
 fprintf("Nominal crater position (LOS) (%.2f, %.2f, %.2f) km \n", r_crater_LOS_nom(1)/1000, r_crater_LOS_nom(2)/1000, r_crater_LOS_nom(3)/1000)
 fprintf("Bearing angle: %.2f deg \n \n", sc_bearing)
-fprintf("Nominal Azimuth: %.4f deg ---- Nominal Elevation: %.4f deg \n", azimuth_nom, elevation_nom)
-fprintf("Mean Azimuth:    %.4f deg ---- Mean Elevatiopn:   %.4f deg \n \n", mean_azimuth_num, mean_elevation_num)
-fprintf("Numerical Azimuth std:  %.4f deg ---- Numerical Elevation std:  %.4f deg \n", std_azimuth_num, std_elevation_num)
-fprintf("Analytical Azimuth std: %.4f deg ---- Analytical Elevation std: %.4f deg \n", std_azimuth_analytical, std_elevation_analytical)
+fprintf("Nominal Azimuth: %.4f deg ---- Nominal Elevation: %.4f deg \n", rad2deg(azimuth_nom), rad2deg(elevation_nom))
+fprintf("Mean Azimuth:    %.4f deg ---- Mean Elevatiopn:   %.4f deg \n \n", rad2deg(mean_azimuth_num), rad2deg(mean_elevation_num))
+fprintf("Numerical Azimuth std:  %.4f deg ---- Numerical Elevation std:  %.4f deg \n", rad2deg(std_azimuth_num), rad2deg(std_elevation_num))
+fprintf("Analytical Azimuth std: %.4f deg ---- Analytical Elevation std: %.4f deg \n", rad2deg(std_azimuth_analytical), rad2deg(std_elevation_analytical))
 
 
 end
