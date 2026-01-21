@@ -164,7 +164,9 @@ r_crater_I2_nom = R_auxLOS_I*(r_crater_LOS_nom-[0;distance_sc;0]);
 
 % Calculate angular errors 
 % angular_errors = normrnd(0, std_expanded);
-angular_errors = normrnd(mean_expanded, std_expanded);
+% angular_errors = normrnd(mean_expanded, std_expanded);
+b_ray = std_expanded/sqrt((4-pi)/2);
+angular_errors = raylrnd(b_ray);
 rand_theta = 2*pi* rand(1,length(angular_errors)); % random angles in circle
 rand_theta = rand_theta';
 
@@ -198,12 +200,12 @@ r_Ecrater_I = R_auxLOS_I*(r_Ecrater_LOS-[0;distance_sc;0]);
 % These angles are found in the LOS reference frame
 
 % Calculate azimuth and elevation angles of nominal crater position
-azimuth_nom = atan2(r_crater_LOS_nom(2), r_crater_LOS_nom(1));
-elevation_nom = atan2(r_crater_LOS_nom(3), sqrt(r_crater_LOS_nom(1)^2+r_crater_LOS_nom(2)^2));
+azimuth_nom = atan2(r_crater_LOS_nom(1), r_crater_LOS_nom(2));
+elevation_nom = atan2(r_crater_LOS_nom(3), sqrt(r_crater_LOS_nom(1)^2+r_crater_LOS_nom(2)^2+r_crater_LOS_nom(3)^2));
 
 % Calculate azimuth and elevation angles of Ecraters
-azimuth = atan2(r_Ecrater_LOS(2,:), r_Ecrater_LOS(1,:));
-elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2,:).^2));
+azimuth = atan2(r_Ecrater_LOS(1,:), r_Ecrater_LOS(2,:));
+elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2,:).^2+r_Ecrater_LOS(3,:).^2));
 
 mean_azimuth_num = mean(azimuth);
 mean_elevation_num = mean(elevation);
