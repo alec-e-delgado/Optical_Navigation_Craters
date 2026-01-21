@@ -200,12 +200,12 @@ r_Ecrater_I = R_auxLOS_I*(r_Ecrater_LOS-[0;distance_sc;0]);
 % These angles are found in the LOS reference frame
 
 % Calculate azimuth and elevation angles of nominal crater position
-azimuth_nom = atan2(r_crater_LOS_nom(1), r_crater_LOS_nom(2));
-elevation_nom = atan2(r_crater_LOS_nom(3), sqrt(r_crater_LOS_nom(1)^2+r_crater_LOS_nom(2)^2+r_crater_LOS_nom(3)^2));
+azimuth_nom = atan2(r_crater_LOS_nom(2), r_crater_LOS_nom(1));
+elevation_nom = atan2(r_crater_LOS_nom(3), sqrt(r_crater_LOS_nom(1)^2+r_crater_LOS_nom(2)^2));
 
 % Calculate azimuth and elevation angles of Ecraters
-azimuth = atan2(r_Ecrater_LOS(1,:), r_Ecrater_LOS(2,:));
-elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2,:).^2+r_Ecrater_LOS(3,:).^2));
+azimuth = atan2(r_Ecrater_LOS(2,:), r_Ecrater_LOS(1,:));
+elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2,:).^2));
 
 mean_azimuth_num = mean(azimuth);
 mean_elevation_num = mean(elevation);
@@ -279,7 +279,8 @@ fprintf("Bearing angle: %.2f deg \n \n", sc_bearing)
 fprintf("Nominal Azimuth: %.4f deg ---- Nominal Elevation: %.4f deg \n", rad2deg(azimuth_nom), rad2deg(elevation_nom))
 fprintf("Mean Azimuth:    %.4f deg ---- Mean Elevatiopn:   %.4f deg \n \n", rad2deg(mean_azimuth_num), rad2deg(mean_elevation_num))
 fprintf("Numerical Azimuth std:  %.4f deg ---- Numerical Elevation std:  %.4f deg \n", rad2deg(std_azimuth_num), rad2deg(std_elevation_num))
-fprintf("Analytical Azimuth std: %.4f deg ---- Analytical Elevation std: %.4f deg \n", rad2deg(std_azimuth_analytical), rad2deg(std_elevation_analytical))
+fprintf("Analytical Azimuth std: %.4f deg ---- Analytical Elevation std: %.4f deg \n\n", rad2deg(std_azimuth_analytical), rad2deg(std_elevation_analytical))
+fprintf("Angular error Mean:  %.4f deg ---- Angular Error std:  %.4f deg \n", rad2deg(mean_expanded(1)), rad2deg(std_expanded(1)))
 
 
 end
