@@ -26,7 +26,7 @@ for j = 1:rep_matrix_size(1)
     fprintf('%d -- sc_inc = %.2f -- crater_radius = %.2f\n', j, repeat_matrix_detections(j,3),repeat_matrix_detections(j,4))
 end
 
-desired_indices = 2:8; % list of indices to use for crater generation
+desired_indices = 1:46; % list of indices to use for crater generation
 
 % Extract crater quantities associated with desired indeces
 std_devs = repeat_matrix_detections(desired_indices,2); % rad

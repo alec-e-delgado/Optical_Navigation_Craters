@@ -105,52 +105,78 @@ rand_theta = 2*pi* rand(length(angular_errors),1); % random angles in circle
 % ERR reference frame has its orgin centered at the spacecraft with its x
 % axis pointing towards the nominal crater position
 
-r_sc_c_dist = norm(r_crater_LOS_nom); % distance from spacecraft to crater
+% Pre allocate
+r_Ecrater_LOS = zeros(3, length(r_crater_LOS_nom));
 
-% Calculate position of perturbed craters (Ecrater) in ERR frame
-x_Ecrater_ERR = cos(angular_errors);                             
-y_Ecrater_ERR = sin(angular_errors) .* cos(rand_theta);
-z_Ecrater_ERR = sin(angular_errors) .* sin(rand_theta);
-
-r_Ecrater_ERR = r_sc_c_dist*[x_Ecrater_ERR y_Ecrater_ERR z_Ecrater_ERR]; % extend ny nominal distance
-
-% Generate rotation matrix using unit vectors defined in LOS frame
-x_uv_ERR = r_crater_LOS_nom/norm(r_crater_LOS_nom);
-y_uv_ERR = cross([0 0 1], x_uv_ERR)/norm(cross([0 0 1], x_uv_ERR));
-z_uv_ERR = cross(x_uv_ERR, y_uv_ERR);
-
-R_ERR_LOS = [x_uv_ERR, y_uv_ERR', z_uv_ERR']; % rotate from ERR to LOS frames
-
-% Ecrater positions in LOS frame
-r_Ecrater_LOS = R_ERR_LOS*r_Ecrater_ERR';
+for i= 1:length(r_crater_LOS_nom)
+    r_sc_c_dist = norm(r_crater_LOS_nom(:,i)); % distance from spacecraft to crater
+    
+    % Calculate position of perturbed craters (Ecrater) in ERR frame
+    x_Ecrater_ERR = cos(angular_errors(i));                             
+    y_Ecrater_ERR = sin(angular_errors(i)) .* cos(rand_theta(i));
+    z_Ecrater_ERR = sin(angular_errors(i)) .* sin(rand_theta(i));
+    
+    r_Ecrater_ERR = r_sc_c_dist*[x_Ecrater_ERR y_Ecrater_ERR z_Ecrater_ERR]; % extend ny nominal distance
+    
+    % Generate rotation matrix using unit vectors defined in LOS frame
+    x_uv_ERR = r_crater_LOS_nom(:,i)/norm(r_crater_LOS_nom(:,i));
+    y_uv_ERR = cross([0 0 1], x_uv_ERR)/norm(cross([0 0 1], x_uv_ERR));
+    z_uv_ERR = cross(x_uv_ERR, y_uv_ERR);
+    
+    R_ERR_LOS = [x_uv_ERR, y_uv_ERR', z_uv_ERR']; % rotate from ERR to LOS frames
+    
+    % Ecrater positions in LOS frame
+    r_Ecrater_LOS(:,i) = R_ERR_LOS*r_Ecrater_ERR';
+end
 
 % Ecrater positions in I frame
-r_Ecrater_I = R_auxLOS_I*(r_Ecrater_LOS-[0;distance_sc;0]);
+% r_Ecrater_I = R_auxLOS_I*(r_Ecrater_LOS-[0;distance_sc;0]);
 
 %% Calculate Deviations in Azimuth and Elevation angles
 % These angles are found in the LOS reference frame
 
 % Calculate azimuth and elevation angles of nominal crater position
-azimuth_nom = atan2(r_crater_LOS_nom(2), r_crater_LOS_nom(1));
-elevation_nom = atan2(r_crater_LOS_nom(3), sqrt(r_crater_LOS_nom(1)^2+r_crater_LOS_nom(2)^2));
+azimuth_nom = atan2(r_crater_LOS_nom(2,:), r_crater_LOS_nom(1,:));
+elevation_nom = atan2(r_crater_LOS_nom(3,:), sqrt(r_crater_LOS_nom(1,:).^2+r_crater_LOS_nom(2,:).^2));
 
 % Calculate azimuth and elevation angles of Ecraters
 azimuth = atan2(r_Ecrater_LOS(2,:), r_Ecrater_LOS(1,:));
 elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2,:).^2));
 
-mean_azimuth_num = mean(azimuth);
-mean_elevation_num = mean(elevation);
-
-% Numerical Standard Deviations 
-std_azimuth_num = std(azimuth);
-std_elevation_num = std(elevation);
-
 % Analytical Standard Deviations
-std_elevation_analytical = std_expanded(1)/sqrt((4-pi)/2);
-std_azimuth_analytical = std_expanded(1)/sqrt((4-pi)/2)/cos(elevation_nom);
+std_elevation_analytical = std_expanded/sqrt((4-pi)/2);
+std_azimuth_analytical = std_expanded./sqrt((4-pi)/2)./cos(elevation_nom');
 
-% num_error = length(std_expanded);
+%% Least Squares method
+
+L = length(r_crater_LOS_nom); % number of measurements 
+
+% Pre-allocate space for A and z matrices
+A = zeros(2*L, 3);
+z = zeros(2*L, 1); 
+
+for i = 1:L
+
+    % Calc inter vectors
+    u_theta = [sin(azimuth(i));-cos(azimuth(i));0]; % Eq. 48
+
+    u_psi = [-cos(azimuth(i))*sin(elevation(i)); ...
+             -sin(azimuth(i))*sin(elevation(i)); ...
+             cos(elevation(i))]; % Eq. 52
+
+    % Stacking into A matrix A_n [2x3]
+    A(2*i-1:2*i, :) = [u_theta'; u_psi'];
+
+    % Stacking into z vector z_n [2x1]
+    p_n = r_Ecrater_LOS(:,i); % Extract position of considered crater
+    z(2*i-1:2*i) = [u_theta'*p_n; ...
+                    u_psi'*p_n];
 
 
+end
+
+g_LS_LOS = inv(A'*A)*A'*z;
+
+g_LS_I = R_auxLOS_I*(g_LS_LOS-[0;distance_sc;0]);
 
 end
