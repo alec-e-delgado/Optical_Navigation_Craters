@@ -91,75 +91,7 @@ R_auxLOS_I = [x_uv_LOS', y_uv_LOS, z_uv_LOS']; % Rotation matrix from LOS to I
 % Crater position in Inretial used for validation
 r_crater_I2_nom = R_auxLOS_I*(r_crater_LOS_nom-[0;distance_sc;0]);
 % 
-% % Used to visualize the aux and LOS reference frames
-% x_origin = 0;
-% y_origin = 0;
-% z_origin = 0;
-% figure; % Open a new figure window
-% hold on 
-% for i = 1:3
-%     if i == 1
-%         u = x_uv_aux(1);
-%         v = x_uv_aux(2);
-%         w = x_uv_aux(3);
-%         % Plot the vector
-%         quiver3(x_origin, y_origin, z_origin, u, v, w, 0,'Color', 'r'); % The '0' disables automatic scaling
-%     elseif i == 2
-%         u = y_uv_aux(1);
-%         v = y_uv_aux(2);
-%         w = y_uv_aux(3);
-%         % Plot the vector
-%         quiver3(x_origin, y_origin, z_origin, u, v, w, 0,'Color', 'g'); % The '0' disables automatic scaling
-%     else
-%         u = z_uv_aux(1);
-%         v = z_uv_aux(2);
-%         w = z_uv_aux(3);
-%         % Plot the vector
-%         quiver3(x_origin, y_origin, z_origin, u, v, w, 0,'Color', 'b'); % The '0' disables automatic scaling
-%     end
-% end
-% axis equal; % Use equal data unit lengths along each axis
-% xlim([-1 1]); % Set x-axis limits
-% ylim([-1 1]); % Set y-axis limits
-% zlim([-1 1]); % Set z-axis limits
-% title('3D Unit Vector Plot');
-% xlabel('X-axis');
-% ylabel('Y-axis');
-% zlabel('Z-axis');
-% grid on;
-% 
-% figure 
-% hold on
-% for i = 1:3
-%     if i == 1
-%         u = x_uv_LOS(1);
-%         v = x_uv_LOS(2);
-%         w = x_uv_LOS(3);
-%         % Plot the vector
-%         quiver3(x_origin, y_origin, z_origin, u, v, w, 0,'Color', 'm'); % The '0' disables automatic scaling
-%     elseif i == 2
-%         u = y_uv_LOS(1);
-%         v = y_uv_LOS(2);
-%         w = y_uv_LOS(3);
-%         % Plot the vector
-%         quiver3(x_origin, y_origin, z_origin, u, v, w, 0,'Color', 'y'); % The '0' disables automatic scaling
-%     else
-%         u = z_uv_LOS(1);
-%         v = z_uv_LOS(2);
-%         w = z_uv_LOS(3);
-%         % Plot the vector
-%         quiver3(x_origin, y_origin, z_origin, u, v, w, 0,'Color', 'c'); % The '0' disables automatic scaling
-%     end
-% end
-% axis equal; % Use equal data unit lengths along each axis
-% xlim([-1 1]); % Set x-axis limits
-% ylim([-1 1]); % Set y-axis limits
-% zlim([-1 1]); % Set z-axis limits
-% title('3D Unit Vector Plot');
-% xlabel('X-axis');
-% ylabel('Y-axis');
-% zlabel('Z-axis');
-% grid on;
+
 
 
 % Calculate angular errors 
@@ -167,8 +99,7 @@ r_crater_I2_nom = R_auxLOS_I*(r_crater_LOS_nom-[0;distance_sc;0]);
 % angular_errors = normrnd(mean_expanded, std_expanded);
 b_ray = std_expanded/sqrt((4-pi)/2);
 angular_errors = raylrnd(b_ray);
-rand_theta = 2*pi* rand(1,length(angular_errors)); % random angles in circle
-rand_theta = rand_theta';
+rand_theta = 2*pi* rand(length(angular_errors),1); % random angles in circle
 
 %% Calculate perturbed crater positions in err reference frame 
 % ERR reference frame has its orgin centered at the spacecraft with its x
@@ -215,72 +146,11 @@ std_azimuth_num = std(azimuth);
 std_elevation_num = std(elevation);
 
 % Analytical Standard Deviations
-% std_azimuth_analytical = (std_expanded(1)/sqrt(2))/cos(azimuth_nom);
-% std_elevation_analytical = std_expanded(1)/sqrt(2)/cos(elevation_nom);
 std_elevation_analytical = std_expanded(1)/sqrt((4-pi)/2);
 std_azimuth_analytical = std_expanded(1)/sqrt((4-pi)/2)/cos(elevation_nom);
 
-num_error = length(std_expanded);
+% num_error = length(std_expanded);
 
-% figure % used to visualize crater error locations in error crater frame
-% % quiver3(zeros(num_error,1), zeros(num_error,1), zeros(num_error,1), x_error_aux_uv, y_error_aux_uv, z_error_aux_uv, 'r');
-% quiver3(zeros(num_error,1), zeros(num_error,1), zeros(num_error,1), r_Ecrater_ERR(:,1), ...
-%      r_Ecrater_ERR(:,2),r_Ecrater_ERR(:,3), 'r');
-% xlabel('x-axis')
-% ylabel('y-axis')
-% zlabel('z-axis')
-% axis equal
-
-
-theta_circle = 0:0.01:2*pi; 
-x_circle_aux = cos(gamma_nom(1))*radius_Moon*ones(length(theta_circle), 1); % used to plot circle of possibilites
-y_circle_aux = sin(gamma_nom(1))*cos(theta_circle)*radius_Moon; 
-z_circle_aux = sin(gamma_nom(1))*sin(theta_circle)*radius_Moon;
-r_circle_aux = [x_circle_aux'; y_circle_aux; z_circle_aux];
-r_circle_I = R_aux_I*r_circle_aux;
-
-[xsphere, ysphere, zsphere] = sphere(30);
-xsphere = radius_Moon * xsphere;
-ysphere = radius_Moon * ysphere;
-zsphere = radius_Moon * zsphere;
-
-% figure;
-% axis equal
-% moon_sphere = surf(xsphere, ysphere, zsphere);
-% set(moon_sphere, 'FaceColor', [0.5 0.5 0.5]); 
-% hold on 
-% plot3(x_crater_aux2_nom, y_crater_aux2_nom, z_crater_aux2_nom, 'r*', 'MarkerSize',5, 'LineWidth',1.5)
-% plot3(x_circle_aux, y_circle_aux, z_circle_aux, 'm-', 'MarkerSize',5, 'LineWidth',2)
-% plot3(distance_sc, 0, 0, 'b*', 'MarkerSize',5, 'LineWidth',2)
-% xlabel('x-axis (m)')
-% ylabel('y-axis (m)')
-% zlabel('z-axis (m)')
-% title('Auxiliary reference frame')
-% text(distance_sc, 0, 0, 'SC', 'Color',[1 1 1])
-
-% % plot in the inertial reference frame
-% figure;
-% axis equal
-% moon_sphere = surf(xsphere, ysphere, zsphere);
-% set(moon_sphere, 'FaceColor', [0.5 0.5 0.5]); 
-% hold on 
-% % plot3(r_crater_I_nom(1,:), r_crater_I_nom(2,:), r_crater_I_nom(3,:), 'yx', 'MarkerSize',5, 'LineWidth',1.5)
-% plot3(r_Ecrater_I(1,:), r_Ecrater_I(2,:), r_Ecrater_I(3,:), 'yx', 'MarkerSize',5, 'LineWidth',1.5)
-% plot3(r_circle_I(1,:), r_circle_I(2,:), r_circle_I(3,:), 'g-', 'MarkerSize',5, 'LineWidth',1.5)
-% plot3(r_sc_I(1),r_sc_I(2), r_sc_I(3), 'b*', 'MarkerSize',5, 'LineWidth',2)
-% xlabel('x-axis (m)')
-% ylabel('y-axis (m)')
-% zlabel('z-axis (m)')
-% title('Inertial reference frame centered at the Moon')
-% text(r_sc_I(1), r_sc_I(2), r_sc_I(3), 'SC', 'Color',[1 1 1])
-
-fprintf("Nominal crater position (LOS) (%.2f, %.2f, %.2f) km \n", r_crater_LOS_nom(1)/1000, r_crater_LOS_nom(2)/1000, r_crater_LOS_nom(3)/1000)
-fprintf("Bearing angle: %.2f deg \n \n", sc_bearing)
-fprintf("Nominal Azimuth: %.4f deg ---- Nominal Elevation: %.4f deg \n", rad2deg(azimuth_nom), rad2deg(elevation_nom))
-fprintf("Mean Azimuth:    %.4f deg ---- Mean Elevatiopn:   %.4f deg \n \n", rad2deg(mean_azimuth_num), rad2deg(mean_elevation_num))
-fprintf("Numerical Azimuth std:  %.4f deg ---- Numerical Elevation std:  %.4f deg \n", rad2deg(std_azimuth_num), rad2deg(std_elevation_num))
-fprintf("Analytical Azimuth std: %.4f deg ---- Analytical Elevation std: %.4f deg \n\n", rad2deg(std_azimuth_analytical), rad2deg(std_elevation_analytical))
-fprintf("Angular error Mean:  %.4f deg ---- Angular Error std:  %.4f deg \n", rad2deg(mean_expanded(1)), rad2deg(std_expanded(1)))
 
 
 end
