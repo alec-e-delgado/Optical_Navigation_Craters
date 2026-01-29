@@ -147,7 +147,7 @@ elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2
 std_elevation_analytical = std_expanded/sqrt((4-pi)/2);
 std_azimuth_analytical = std_expanded./sqrt((4-pi)/2)./cos(elevation_nom');
 
-%% Least Squares method
+%% Least Squares (LS) method
 
 L = length(r_crater_LOS_nom); % number of measurements 
 
@@ -168,15 +168,58 @@ for i = 1:L
     A(2*i-1:2*i, :) = [u_theta'; u_psi'];
 
     % Stacking into z vector z_n [2x1]
-    p_n = r_Ecrater_LOS(:,i); % Extract position of considered crater
+    p_n = r_crater_LOS_nom(:,i); % Extract position of considered crater (nom)
     z(2*i-1:2*i) = [u_theta'*p_n; ...
                     u_psi'*p_n];
 
-
 end
 
-g_LS_LOS = inv(A'*A)*A'*z;
+% Calc LS estimate
+g_LS_LOS = inv(A'*A)*A'*z; % used to get initial distance for WLS
 
-g_LS_I = R_auxLOS_I*(g_LS_LOS-[0;distance_sc;0]);
+fprintf("LS Distance error: %.4f km \n", norm(g_LS_LOS)/1000)
+
+%% Weighted Least Squares (WLS) method
+
+% Calc distances of craters using LS estimate
+do = vecnorm(g_LS_LOS-r_crater_LOS_nom); % m
+
+% Pre allocate spcae for weights Matrices
+W_block = zeros(2*L, 2*L);
+
+for i = 1:L
+    % Calc inter vectors using measured values
+    uo_theta = [sin(azimuth(i));-cos(azimuth(i));0]; % Eq. 48
+
+    uo_psi = [-cos(azimuth(i))*sin(elevation(i)); ...
+             -sin(azimuth(i))*sin(elevation(i)); ...
+             cos(elevation(i))]; % Eq. 52
+    
+    % System matrix
+    Ao = [uo_theta'; uo_psi']; 
+
+    % Position error covariance
+    R_p = zeros(3);
+
+    % Measurement covariance
+    R_theta = diag([std_azimuth_analytical(i)^2, std_elevation_analytical(i)^2]);
+
+    % Temp matrix Do
+    Do = diag([-do(i)*cos(elevation(i)), do(i)]);
+
+    % Compute covariance matrix R_eta
+    R_eta_n = Do*R_theta*Do' + Ao*R_p*Ao'; % Eq. 55
+
+    % Calc weight matrix
+    W_n = inv(R_eta_n);
+
+    W_block(2*i-1:2*i, 2*i-1:2*i) = W_n;
+end
+
+g_WLS_LOS = inv(A'*W_block*A)*A'*W_block*z;
+
+fprintf("WLS Distance error: %.4f km \n", norm(g_WLS_LOS)/1000)
+
+%% Bias-Compensated Weighted Least Squares (BCWLS)
 
 end

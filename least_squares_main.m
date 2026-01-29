@@ -4,7 +4,7 @@ close all; clear; clc;
 % 3) to compute the position of the spacecraft
 
 % Define parameters
-altitude_sc = 35000; % current distance away from moon surface (need units)
+altitude_sc = 50000; % current distance away from moon surface (need units)
 moon_angle = 90; % incidence angle with moon surface (degrees)
 radius_Moon = 1.7374e6; % m
 distance_sc = altitude_sc+radius_Moon; % m
