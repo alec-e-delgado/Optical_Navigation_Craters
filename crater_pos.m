@@ -1,4 +1,4 @@
-function [r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded)
+function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %CRATER_POS
 %  - This script calculaes the positions of detected craters defined in
@@ -177,7 +177,10 @@ end
 % Calc LS estimate
 g_LS_LOS = inv(A'*A)*A'*z; % used to get initial distance for WLS
 
-fprintf("LS Distance error: %.4f km \n", norm(g_LS_LOS)/1000)
+% fprintf("LS Distance error: %.4f km \n", norm(g_LS_LOS)/1000)
+
+% Store absolute error
+LS_e = norm(g_LS_LOS);
 
 %% Weighted Least Squares (WLS) method
 
@@ -218,7 +221,10 @@ end
 
 g_WLS_LOS = inv(A'*W_block*A)*A'*W_block*z;
 
-fprintf("WLS Distance error: %.4f km \n", norm(g_WLS_LOS)/1000)
+% Store absolute error
+WLS_e = norm(g_WLS_LOS);
+
+% fprintf("WLS Distance error: %.4f km \n", norm(g_WLS_LOS)/1000)
 
 %% Bias-Compensated Weighted Least Squares (BCWLS)
 
@@ -253,7 +259,7 @@ gamma_gWLS = inv(A'*W_block*A)*Atwn;
 
 g_BCWLS_LOS = g_WLS_LOS-gamma_gWLS;
 
-fprintf("BCWLS Distance error: %.4f km \n", norm(g_BCWLS_LOS)/1000)
+% fprintf("BCWLS Distance error: %.4f km \n", norm(g_BCWLS_LOS)/1000)
 
 
 end

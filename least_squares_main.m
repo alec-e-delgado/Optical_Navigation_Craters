@@ -26,12 +26,99 @@ for j = 1:rep_matrix_size(1)
     fprintf('%d -- sc_inc = %.2f -- crater_radius = %.2f\n', j, repeat_matrix_detections(j,3),repeat_matrix_detections(j,4))
 end
 
-desired_indices = 1:46; % list of indices to use for crater generation
+desired_indices = 1:length(x_2); % list of indices to use for crater generation
 
 % Extract crater quantities associated with desired indeces
 std_devs = repeat_matrix_detections(desired_indices,2); % rad
 means = repeat_matrix_detections(desired_indices,1); % rad
 sc_bearings = repeat_matrix_detections(desired_indices, 3); % rad
 
+% Number of times to run simulation
+
+N = 10000;
+j_end = 4;
+
+% Pre allocate space for errors
+LS_errors = zeros(N, j_end);
+WLS_errors = zeros(N, j_end);
+
+for j = 1:j_end
+
+for i = 1:N
 % Pass statistic values 
-[r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings, std_devs, means);
+    [WLS_e, LS_e, r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings, std_devs, means);
+
+    LS_errors(i,j) = LS_e;
+    WLS_errors(i,j) = WLS_e;
+end
+
+% Scale errors by altitude
+scaled_LS(:,j) = LS_errors(:,j)/altitude_sc * 100; 
+scaled_WLS(:,j) = WLS_errors(:,j)/altitude_sc * 100;
+
+% mean_LS(N/100) = mean(LS_errors);
+% std_LS(N/100) = std(LS_errors);
+% 
+% mean_WLS(N/100) = mean(WLS_errors);
+% std_WLS(N/100) = std(WLS_errors);
+
+
+end
+
+% Plot histograms for the scaled errors
+
+figure
+subplot(2,2,1)
+hold on
+histogram(scaled_LS(:,1), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
+histogram(scaled_WLS(:,1), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
+title('Scaled Least Squares Errors')
+xlabel('Error (%)')
+ylabel('Probability Density')
+
+subplot(2,2,2)
+hold on
+histogram(scaled_LS(:,2), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
+histogram(scaled_WLS(:,2), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
+title('Scaled Least Squares Errors')
+xlabel('Error (%)')
+ylabel('Probability Density')
+
+subplot(2,2,3)
+hold on
+histogram(scaled_LS(:,3), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
+histogram(scaled_WLS(:,3), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
+title('Scaled Least Squares Errors')
+xlabel('Error (%)')
+ylabel('Probability Density')
+
+subplot(2,2,4)
+hold on
+histogram(scaled_LS(:,4), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
+histogram(scaled_WLS(:,4), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
+title('Scaled Least Squares Errors')
+xlabel('Error (%)')
+ylabel('Probability Density')
+
+legend('LS', 'WLS')
+
+% figure
+% hold on
+% plot(100:100:10000, mean_LS,'LineWidth', 1.5)
+% plot(100:100:10000,mean_WLS,'LineWidth', 1.5)
+% title('Mean convergence ')
+% xlabel('Runs')
+% ylabel('Mean (Absolute error)')
+% legend('LS', 'WLS')
+% 
+% figure
+% hold on
+% plot(100:100:10000,std_LS ,'LineWidth', 1.5)
+% plot(100:100:10000,std_WLS,'LineWidth', 1.5)
+% title('std convergence ')
+% xlabel('Runs')
+% ylabel('STD (absolute error)')
+% legend('LS', 'WLS')
+
+
+
