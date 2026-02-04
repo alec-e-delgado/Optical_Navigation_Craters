@@ -42,7 +42,8 @@ j_end = 4;
 LS_errors = zeros(N, j_end);
 WLS_errors = zeros(N, j_end);
 
-for j = 1:j_end
+% for j = 1:j_end
+for N = 100:100:10000
 
 for i = 1:N
 % Pass statistic values 
