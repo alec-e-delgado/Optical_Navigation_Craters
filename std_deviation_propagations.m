@@ -7,7 +7,7 @@ close all; clear; clc;
 % angular_error_calc (just 
 
 % Define parameters
-altitude_sc = 42000; % current distance away from moon surface (need units)
+altitude_sc = 45000; % current distance away from moon surface (need units)
 moon_angle = 90; % incidence angle with moon surface (degrees)
 radius_Moon = 1.7374e6; % m
 distance_sc = altitude_sc+radius_Moon; % m
@@ -97,10 +97,15 @@ angle_mat = sortrows(stack_mat,2,'ascend');
 writecell(heading,filename,'Sheet',3)
 writematrix(angle_mat,filename,'Sheet',3,'Range','A2')
 
+% Organize by azimuth
+azimuth_mat = sortrows(stack_mat,3,'descend','ComparisonMethod','abs');
+writecell(heading,filename,'Sheet',4)
+writematrix(azimuth_mat,filename,'Sheet',4,'Range','A2')
+
 % Organize by elevation
 elevation_mat = sortrows(stack_mat,4,'descend','ComparisonMethod','abs');
-writecell(heading,filename,'Sheet',4)
-writematrix(elevation_mat,filename,'Sheet',4,'Range','A2')
+writecell(heading,filename,'Sheet',5)
+writematrix(elevation_mat,filename,'Sheet',5,'Range','A2')
 
 
 

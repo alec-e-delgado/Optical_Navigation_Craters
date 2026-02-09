@@ -201,12 +201,12 @@ r_Ecrater_I = R_auxLOS_I*(r_Ecrater_LOS-[0;distance_sc;0]);
 
 % Calculate azimuth and elevation angles of nominal crater position
 % azimuth_nom = atan2(r_crater_LOS_nom(2), r_crater_LOS_nom(1));
-azimuth_nom = atan2(r_crater_LOS_nom(1), r_crater_LOS_nom(2));
+azimuth_nom = atan2(r_crater_LOS_nom(2), r_crater_LOS_nom(1));
 elevation_nom = atan2(r_crater_LOS_nom(3), sqrt(r_crater_LOS_nom(1)^2+r_crater_LOS_nom(2)^2));
 
 % Calculate azimuth and elevation angles of Ecraters
 % azimuth = atan2(r_Ecrater_LOS(2,:), r_Ecrater_LOS(1,:));
-azimuth = atan2(r_Ecrater_LOS(1,:), r_Ecrater_LOS(2,:));
+azimuth = atan2(r_Ecrater_LOS(2,:), r_Ecrater_LOS(1,:));
 elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2,:).^2));
 
 mean_azimuth_num = mean(azimuth);
