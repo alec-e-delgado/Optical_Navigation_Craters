@@ -147,23 +147,33 @@ elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2
 std_elevation_analytical = std_expanded/sqrt((4-pi)/2);
 std_azimuth_analytical = std_expanded./sqrt((4-pi)/2)./cos(elevation_nom');
 
-if leave == 1
-    WLS_e = azimuth;
-    LS_e = elevation;
-    r_crater_I_no = 0;
-    r_crater_aux_nom = 0;
-    return 
-end
+% if leave == 1
+%     WLS_e = azimuth;
+%     LS_e = elevation;
+%     r_crater_I_no = 0;
+%     r_crater_aux_nom = 0;
+%     return 
+% end
+
+% Sort 
+[azimuth_sort, idx_sort] = sort(azimuth,'ascend');
+azimuth = azimuth(idx_sort);
+elevation = elevation(idx_sort);
+r_crater_LOS_nom = r_crater_LOS_nom(:,idx_sort);
+std_azimuth_analytical = std_azimuth_analytical(idx_sort);
+std_elevation_analytical = std_elevation_analytical(idx_sort);
 
 
 %% Least Squares (LS) method
 
-L = length(r_crater_LOS_nom); % number of measurements 
+num_craters = length(r_crater_LOS_nom); % number of measurements 
 
 % Pre-allocate space for A and z matrices
+
+
+for L = 3:num_craters
 A = zeros(2*L, 3);
 z = zeros(2*L, 1); 
-
 for i = 1:L
 
     % Calc inter vectors
@@ -189,12 +199,12 @@ g_LS_LOS = inv(A'*A)*A'*z; % used to get initial distance for WLS
 % fprintf("LS Distance error: %.4f km \n", norm(g_LS_LOS)/1000)
 
 % Store absolute error
-LS_e = norm(g_LS_LOS);
+LS_e(L) = norm(g_LS_LOS);
 
 %% Weighted Least Squares (WLS) method
 
 % Calc distances of craters using LS estimate
-do = vecnorm(g_LS_LOS-r_crater_LOS_nom); % m
+do = vecnorm(g_LS_LOS-r_crater_LOS_nom(:,1:L)); % m
 
 % Pre allocate spcae for weights Matrices
 W_block = zeros(2*L, 2*L);
@@ -231,7 +241,9 @@ end
 g_WLS_LOS = inv(A'*W_block*A)*A'*W_block*z;
 
 % Store absolute error
-WLS_e = norm(g_WLS_LOS);
+WLS_e(L) = norm(g_WLS_LOS);
+
+end
 
 % fprintf("WLS Distance error: %.4f km \n", norm(g_WLS_LOS)/1000)
 

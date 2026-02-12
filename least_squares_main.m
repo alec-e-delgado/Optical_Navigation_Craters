@@ -36,8 +36,7 @@ sc_bearings = repeat_matrix_detections(desired_indices, 3); % rad
 
 % Number of times to run simulation
 
-% N = 10000; % to use for Monte Carlo
-N = num_craters;
+N = 10000; % to use for Monte Carlo
 
 % Pre allocate space for errors
 mean_LS = zeros(N, 1);
@@ -63,24 +62,38 @@ means = means(idx_sort);
 % function, thats why it needs to be added within the function, just add it
 % there, sort, and extract the best i craters, use i as input to function
 
+% Pre allocate space
+LS_errors = zeros(num_craters, N); % Preallocate LS_errors matrix
+WLS_errors = zeros(num_craters, N); % Preallocate WLS_errors matrix
+mean_LS_con = zeros(1, N);
+std_LS_con = zeros(1, N);
+mean_WLS_con = zeros(1, N);
+std_WLS_con = zeros(1, N);
 
-leave = 0;
+
 % for i = 1:N % Monte Carlo
-for i = 3:num_craters % need minimum three measurements
-    for j = 1:10000 % num iterations
+% for i = 1 % need minimum three measurements
+    for j = 1:N % num iterations
     % Pass statistic values 
-    [WLS_e, LS_e, r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings(1:i), std_devs(1:i), means(1:i),leave);
+    [WLS_e, LS_e, r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings, std_devs, means,leave);
     
-        LS_errors(j) = LS_e;
-        WLS_errors(j) = WLS_e;
+        LS_errors(:,j) = LS_e;
+        WLS_errors(:,j) = WLS_e;
+        fprintf("Iteration: %.d\n", j)
+
+        mean_LS_con(j) = mean(LS_errors(end,1:j),2);
+        std_LS_con(j) = std(LS_errors(end,1:j),0,2);
+
+        mean_WLS_con(j) = mean(WLS_errors(end,1:j),2);
+        std_WLS_con(j) = std(WLS_errors(end,1:j),0,2);
     
     end
-        mean_LS(i) = mean(LS_errors);
-        std_LS(i) = std(LS_errors);
-    
-        mean_WLS(i) = mean(WLS_errors);
-        std_WLS(i) = std(WLS_errors);
-end
+mean_LS = mean(LS_errors,2);
+std_LS = std(LS_errors,0,2);
+
+mean_WLS = mean(WLS_errors,2);
+std_WLS = std(WLS_errors,0,2);
+% end
 
 
 % % Scale errors by altitude
@@ -128,29 +141,29 @@ end
 % legend('LS', 'WLS')
 
 % Monte Carlo
-% figure
-% hold on
-% plot(1:N, mean_LS,'LineWidth', 1.5)
-% plot(1:N,mean_WLS,'LineWidth', 1.5)
-% title('Mean convergence ')
-% xlabel('Runs')
-% ylabel('Mean (Absolute error)')
-% legend('LS', 'WLS')
-% 
-% figure
-% hold on
-% plot(1:N,std_LS ,'LineWidth', 1.5)
-% plot(1:N,std_WLS,'LineWidth', 1.5)
-% title('std convergence ')
-% xlabel('Runs')
-% ylabel('STD (absolute error)')
-% legend('LS', 'WLS')
+figure
+hold on
+plot(1:N, mean_LS_con,'LineWidth', 1.5)
+plot(1:N,mean_WLS_con,'LineWidth', 1.5)
+title('Mean convergence ')
+xlabel('Runs')
+ylabel('Mean (Absolute error)')
+legend('LS', 'WLS')
+
+figure
+hold on
+plot(1:N,std_LS_con ,'LineWidth', 1.5)
+plot(1:N,std_WLS_con,'LineWidth', 1.5)
+title('std convergence ')
+xlabel('Runs')
+ylabel('STD (absolute error)')
+legend('LS', 'WLS')
 
 % Sorted Craters
 figure
 hold on
-plot(3:N, mean_LS(3:end),'LineWidth', 1.5)
-plot(3:N,mean_WLS(3:end),'LineWidth', 1.5)
+plot(3:num_craters, mean_LS(3:end),'LineWidth', 1.5)
+plot(3:num_craters,mean_WLS(3:end),'LineWidth', 1.5)
 title('Mean')
 xlabel('Num Craters')
 ylabel('Mean (Absolute error)')
@@ -158,12 +171,9 @@ legend('LS', 'WLS')
 
 figure
 hold on
-plot(3:N,std_LS(3:end) ,'LineWidth', 1.5)
-plot(3:N,std_WLS(3:end),'LineWidth', 1.5)
+plot(3:num_craters,std_LS(3:end) ,'LineWidth', 1.5)
+plot(3:num_craters,std_WLS(3:end),'LineWidth', 1.5)
 title('std')
 xlabel('Num Craters')
 ylabel('STD (absolute error)')
 legend('LS', 'WLS')
-
-
-
