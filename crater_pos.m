@@ -1,4 +1,4 @@
-function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded)
+function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded, leave)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %CRATER_POS
 %  - This script calculaes the positions of detected craters defined in
@@ -147,6 +147,15 @@ elevation = atan2(r_Ecrater_LOS(3,:), sqrt(r_Ecrater_LOS(1,:).^2+r_Ecrater_LOS(2
 std_elevation_analytical = std_expanded/sqrt((4-pi)/2);
 std_azimuth_analytical = std_expanded./sqrt((4-pi)/2)./cos(elevation_nom');
 
+if leave == 1
+    WLS_e = azimuth;
+    LS_e = elevation;
+    r_crater_I_no = 0;
+    r_crater_aux_nom = 0;
+    return 
+end
+
+
 %% Least Squares (LS) method
 
 L = length(r_crater_LOS_nom); % number of measurements 
@@ -226,38 +235,39 @@ WLS_e = norm(g_WLS_LOS);
 
 % fprintf("WLS Distance error: %.4f km \n", norm(g_WLS_LOS)/1000)
 
+
 %% Bias-Compensated Weighted Least Squares (BCWLS)
 
 % Pre allocate m matrix
-m_matrix = zeros(3,L);
-
-for i = 1:L
-
-    % Extract Wn and elements
-    W_n = W_block(2*i-1:2*i, 2*i-1:2*i);
-    a_n = W_n(1,1);
-    b_n = W_n(1,2);
-    c_n = W_n(2,2);
-
-    % Form a vectors
-    a_1n = [cos(azimuth(i));sin(azimuth(i));0];
-    a_2n = [sin(azimuth(i))*sin(elevation(i));-cos(azimuth(i))*sin(elevation(i));0];
-    a_3n = -[cos(azimuth(i))*cos(elevation(i));sin(azimuth(i))*cos(elevation(i));sin(elevation(i))];
-
-    % Form g vectors
-    g_1n = -do(i)*cos(elevation(i))*std_azimuth_analytical(i)^2*(a_n*a_1n+b_n*a_2n);
-    g_2n = c_n*do(i)*a_3n*std_elevation_analytical(i)^2;
-
-    % Calc m and save
-    m_n = g_1n+g_2n;
-    m_matrix(:,i) = m_n;
-end
-
-Atwn = sum(m_matrix,2);
-
-gamma_gWLS = inv(A'*W_block*A)*Atwn;
-
-g_BCWLS_LOS = g_WLS_LOS-gamma_gWLS;
+% m_matrix = zeros(3,L);
+% 
+% for i = 1:L
+% 
+%     % Extract Wn and elements
+%     W_n = W_block(2*i-1:2*i, 2*i-1:2*i);
+%     a_n = W_n(1,1);
+%     b_n = W_n(1,2);
+%     c_n = W_n(2,2);
+% 
+%     % Form a vectors
+%     a_1n = [cos(azimuth(i));sin(azimuth(i));0];
+%     a_2n = [sin(azimuth(i))*sin(elevation(i));-cos(azimuth(i))*sin(elevation(i));0];
+%     a_3n = -[cos(azimuth(i))*cos(elevation(i));sin(azimuth(i))*cos(elevation(i));sin(elevation(i))];
+% 
+%     % Form g vectors
+%     g_1n = -do(i)*cos(elevation(i))*std_azimuth_analytical(i)^2*(a_n*a_1n+b_n*a_2n);
+%     g_2n = c_n*do(i)*a_3n*std_elevation_analytical(i)^2;
+% 
+%     % Calc m and save
+%     m_n = g_1n+g_2n;
+%     m_matrix(:,i) = m_n;
+% end
+% 
+% Atwn = sum(m_matrix,2);
+% 
+% gamma_gWLS = inv(A'*W_block*A)*Atwn;
+% 
+% g_BCWLS_LOS = g_WLS_LOS-gamma_gWLS;
 
 % fprintf("BCWLS Distance error: %.4f km \n", norm(g_BCWLS_LOS)/1000)
 
