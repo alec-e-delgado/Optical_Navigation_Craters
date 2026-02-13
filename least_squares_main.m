@@ -3,10 +3,19 @@ close all; clear; clc;
 % The least squares solution will take n number of measurements (at least
 % 3) to compute the position of the spacecraft
 
-% Define parameters
-altitude_sc = 35000; % current distance away from moon surface (need units)
+% Define constant parameters
 moon_angle = 90; % incidence angle with moon surface (degrees)
 radius_Moon = 1.7374e6; % m
+z = 1; % iterator
+altitude0 = 35000;
+altitudefinal = 97000;
+delta_altitude = 1000; % How much to iterate altitude by
+altitude_sc = altitude0; % start at value 
+leave = 1;
+
+while altitude_sc <= altitudefinal
+
+
 distance_sc = altitude_sc+radius_Moon; % m
 
 % Calculate position vector of spacecraft used to locate craters using some
@@ -34,26 +43,32 @@ std_devs = repeat_matrix_detections(desired_indices,2); % rad
 means = repeat_matrix_detections(desired_indices,1); % rad
 sc_bearings = repeat_matrix_detections(desired_indices, 3); % rad
 
+idx_Nan = find(isnan(std_devs)); % finds indices of Nan values
+
+% Remove Nan values
+std_devs(idx_Nan) = []; 
+means(idx_Nan) = [];
+sc_bearings(idx_Nan) = [];
+
+idx_zero = find(std_devs == 0); % finds indices of 0 std value
+
+% Remove zero values
+std_devs(idx_zero) = []; 
+means(idx_zero) = [];
+sc_bearings(idx_zero) = [];
+
 % Number of times to run simulation
 
 N = 10000; % to use for Monte Carlo
 
 % Pre allocate space for errors
-mean_LS = zeros(N, 1);
-std_LS = zeros(N, 1);
-
-mean_WLS = zeros(N, 1);
-std_WLS = zeros(N, 1);
+% mean_LS = zeros(N, 1);    - Used for first n craters
+% std_LS = zeros(N, 1);
+% 
+% mean_WLS = zeros(N, 1);
+% std_WLS = zeros(N, 1);
 
 % for j = 1:jend
-
-leave = 1;
-
-[azimuth, elevation, r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings, std_devs, means,leave);
-[azimuth_sort, idx_sort] = sort(azimuth,'ascend');
-sc_bearings = sc_bearings(idx_sort);
-std_devs = std_devs(idx_sort);
-means = means(idx_sort);
 
 % Need to put above implementation in crater_pos, organize and just
 % extracxt i number of craters
@@ -63,8 +78,10 @@ means = means(idx_sort);
 % there, sort, and extract the best i craters, use i as input to function
 
 % Pre allocate space
-LS_errors = zeros(num_craters, N); % Preallocate LS_errors matrix
-WLS_errors = zeros(num_craters, N); % Preallocate WLS_errors matrix
+% LS_errors = zeros(num_craters, N); % For n best craters
+% WLS_errors = zeros(num_craters, N); 
+LS_errors = zeros(1, N); % For altitude/convergence
+WLS_errors = zeros(1, N);
 mean_LS_con = zeros(1, N);
 std_LS_con = zeros(1, N);
 mean_WLS_con = zeros(1, N);
@@ -77,9 +94,8 @@ std_WLS_con = zeros(1, N);
     % Pass statistic values 
     [WLS_e, LS_e, r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings, std_devs, means,leave);
     
-        LS_errors(:,j) = LS_e;
-        WLS_errors(:,j) = WLS_e;
-        fprintf("Iteration: %.d\n", j)
+        LS_errors(:,j) = LS_e(end); % end only for altitude variation
+        WLS_errors(:,j) = WLS_e(end);
 
         mean_LS_con(j) = mean(LS_errors(end,1:j),2);
         std_LS_con(j) = std(LS_errors(end,1:j),0,2);
@@ -88,12 +104,18 @@ std_WLS_con = zeros(1, N);
         std_WLS_con(j) = std(WLS_errors(end,1:j),0,2);
     
     end
-mean_LS = mean(LS_errors,2);
-std_LS = std(LS_errors,0,2);
+mean_LS(z) = mean(LS_errors,2);
+std_LS(z) = std(LS_errors,0,2);
 
-mean_WLS = mean(WLS_errors,2);
-std_WLS = std(WLS_errors,0,2);
-% end
+mean_WLS(z) = mean(WLS_errors,2);
+std_WLS(z) = std(WLS_errors,0,2);
+
+fprintf("Iteration: %.d\n", altitude_sc)
+
+% Update iterators
+altitude_sc = altitude_sc + delta_altitude; % add 500 m each iteration
+z = z + 1;
+end
 
 
 % % Scale errors by altitude
@@ -141,39 +163,60 @@ std_WLS = std(WLS_errors,0,2);
 % legend('LS', 'WLS')
 
 % Monte Carlo
-figure
-hold on
-plot(1:N, mean_LS_con,'LineWidth', 1.5)
-plot(1:N,mean_WLS_con,'LineWidth', 1.5)
-title('Mean convergence ')
-xlabel('Runs')
-ylabel('Mean (Absolute error)')
-legend('LS', 'WLS')
+% figure
+% hold on
+% plot(1:N, mean_LS_con,'LineWidth', 1.5)
+% plot(1:N,mean_WLS_con,'LineWidth', 1.5)
+% title('Mean convergence ')
+% xlabel('Runs')
+% ylabel('Mean (Absolute error)')
+% legend('LS', 'WLS')
+% 
+% figure
+% hold on
+% plot(1:N,std_LS_con ,'LineWidth', 1.5)
+% plot(1:N,std_WLS_con,'LineWidth', 1.5)
+% title('std convergence ')
+% xlabel('Runs')
+% ylabel('STD (absolute error)')
+% legend('LS', 'WLS')
+% 
+% % Sorted Craters
+% figure
+% hold on
+% plot(3:num_craters, mean_LS(3:end),'LineWidth', 1.5)
+% plot(3:num_craters,mean_WLS(3:end),'LineWidth', 1.5)
+% title('Mean')
+% xlabel('Num Craters')
+% ylabel('Mean (Absolute error)')
+% legend('LS', 'WLS')
+% 
+% figure
+% hold on
+% plot(3:num_craters,std_LS(3:end) ,'LineWidth', 1.5)
+% plot(3:num_craters,std_WLS(3:end),'LineWidth', 1.5)
+% title('std')
+% xlabel('Num Craters')
+% ylabel('STD (absolute error)')
+% legend('LS', 'WLS')
 
-figure
-hold on
-plot(1:N,std_LS_con ,'LineWidth', 1.5)
-plot(1:N,std_WLS_con,'LineWidth', 1.5)
-title('std convergence ')
-xlabel('Runs')
-ylabel('STD (absolute error)')
-legend('LS', 'WLS')
+altitudevec = altitude0:delta_altitude:altitudefinal;
 
-% Sorted Craters
+% Variation over altitude/range
 figure
 hold on
-plot(3:num_craters, mean_LS(3:end),'LineWidth', 1.5)
-plot(3:num_craters,mean_WLS(3:end),'LineWidth', 1.5)
+plot(altitudevec, mean_LS,'LineWidth', 1.5)
+plot(altitudevec,mean_WLS,'LineWidth', 1.5)
 title('Mean')
-xlabel('Num Craters')
+xlabel('Altitude')
 ylabel('Mean (Absolute error)')
 legend('LS', 'WLS')
 
 figure
 hold on
-plot(3:num_craters,std_LS(3:end) ,'LineWidth', 1.5)
-plot(3:num_craters,std_WLS(3:end),'LineWidth', 1.5)
+plot(altitudevec,std_LS ,'LineWidth', 1.5)
+plot(altitudevec,std_WLS,'LineWidth', 1.5)
 title('std')
-xlabel('Num Craters')
+xlabel('Altitude')
 ylabel('STD (absolute error)')
 legend('LS', 'WLS')

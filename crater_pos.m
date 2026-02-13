@@ -29,7 +29,7 @@ function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc
 % spacecraft (unit vector)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Define seed value for consistent theta
-% rng(3);
+% s1 = RandStream('mt19937ar','Seed',42);
 
 %% Find nominal alpha that gives true position of crater
 
@@ -171,7 +171,8 @@ num_craters = length(r_crater_LOS_nom); % number of measurements
 % Pre-allocate space for A and z matrices
 
 
-for L = 3:num_craters
+% for L = 3:num_craters % use first best craters
+for L = num_craters:num_craters % use all craters
 A = zeros(2*L, 3);
 z = zeros(2*L, 1); 
 for i = 1:L
