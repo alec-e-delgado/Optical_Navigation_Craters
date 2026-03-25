@@ -1,4 +1,4 @@
-function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded, leave)
+function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded, leave,radii)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %CRATER_POS
 %  - This script calculaes the positions of detected craters defined in
@@ -28,8 +28,6 @@ function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc
 % - Note that this script locates craters using a known location for the
 % spacecraft (unit vector)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Define seed value for consistent theta
-% s1 = RandStream('mt19937ar','Seed',42);
 
 %% Find nominal alpha that gives true position of crater
 
@@ -156,7 +154,17 @@ std_azimuth_analytical = std_expanded./sqrt((4-pi)/2)./cos(elevation_nom');
 % end
 
 % Sort 
-[azimuth_sort, idx_sort] = sort(azimuth,'ascend');
+% [azimuth_sort, idx_sort] = sort(azimuth,'ascend'); % sort by azimuth angle
+
+if leave == 1
+    [~, idx_sort] = sort(abs(azimuth),'ascend'); % sort by azimuth
+elseif leave == 2
+    [~, idx_sort] = sort(std_expanded,'ascend'); % sort by std
+elseif leave == 3
+    [~, idx_sort] = sort(std_azimuth_analytical,'ascend'); % sort by azimuth std
+elseif leave == 4 % sort by crater radius
+    [~, idx_sort] = sort(radii,'descend'); % sort by azimuth std
+end
 azimuth = azimuth(idx_sort);
 elevation = elevation(idx_sort);
 r_crater_LOS_nom = r_crater_LOS_nom(:,idx_sort);
@@ -171,8 +179,8 @@ num_craters = length(r_crater_LOS_nom); % number of measurements
 % Pre-allocate space for A and z matrices
 
 
-% for L = 3:num_craters % use first best craters
-for L = num_craters:num_craters % use all craters
+for L = 3:num_craters % use first best craters
+% for L = num_craters:num_craters % use all craters
 A = zeros(2*L, 3);
 z = zeros(2*L, 1); 
 for i = 1:L
