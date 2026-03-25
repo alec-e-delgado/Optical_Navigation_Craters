@@ -4,16 +4,20 @@ close all; clear; clc;
 % 3) to compute the position of the spacecraft
 
 % Define constant parameters
-moon_angle = 90; % incidence angle with moon surface (degrees)
+moon_angle = 20; % incidence angle with moon surface (degrees)
 radius_Moon = 1.7374e6; % m
-z = 1; % iterator
 altitude0 = 35000;
 altitudefinal = 97000;
 delta_altitude = 10000; % How much to iterate altitude by
-altitude_sc = altitude0; % start at value 
-leave = 1;
 
-% while altitude_sc <= altitudefinal
+solar_vec = [20 50 80 110 140];
+
+for i = 1:length(solar_vec)
+moon_angle = solar_vec(i);
+altitude_sc = altitude0;
+fprintf('%d\n', i)
+z = 1;
+while altitude_sc <= altitudefinal
 
 
 distance_sc = altitude_sc+radius_Moon; % m
@@ -101,9 +105,9 @@ std_WLS_con = zeros(1, N);
         WLS_errors(:,j) = WLS_e(end);
         BCWLS_errors(:,j) = BCWLS_e(end);
 
-        crater_LS(j,:) = LS_e;
-        crater_WLS(j,:) = WLS_e;
-        crater_BCWLS(j,:) = BCWLS_e;
+        % crater_LS(j,:) = LS_e;
+        % crater_WLS(j,:) = WLS_e;
+        % crater_BCWLS(j,:) = BCWLS_e;
 
         % mean_LS_con(j) = mean(LS_errors(end,1:j),2);
         % std_LS_con(j) = std(LS_errors(end,1:j),0,2);
@@ -112,20 +116,20 @@ std_WLS_con = zeros(1, N);
         % std_WLS_con(j) = std(WLS_errors(end,1:j),0,2);
     
     end
-mean_LS(z) = mean(LS_errors,2);
-std_LS(z) = std(LS_errors,0,2);
-mean_crat_LS = mean(crater_LS,1);
-std_crat_LS = std(crater_LS,0,1);
+mean_LS(i,z) = mean(LS_errors,2);
+std_LS(i,z) = std(LS_errors,0,2);
+% mean_crat_LS = mean(crater_LS,1);
+% std_crat_LS = std(crater_LS,0,1);
 
-mean_WLS(z) = mean(WLS_errors,2);
-std_WLS(z) = std(WLS_errors,0,2);
-mean_crat_WLS = mean(crater_WLS,1);
-std_crat_WLS = std(crater_WLS,0,1);
+mean_WLS(i,z) = mean(WLS_errors,2);
+std_WLS(i,z) = std(WLS_errors,0,2);
+% mean_crat_WLS = mean(crater_WLS,1);
+% std_crat_WLS = std(crater_WLS,0,1);
 
-mean_BCWLS(z) = mean(BCWLS_errors,2);
-std_BCWLS(z) = std(BCWLS_errors,0,2);
-mean_crat_BCWLS = mean(crater_BCWLS,1);
-std_crat_BCWLS = std(crater_BCWLS,0,1);
+mean_BCWLS(i,z) = mean(BCWLS_errors,2);
+std_BCWLS(i,z) = std(BCWLS_errors,0,2);
+% mean_crat_BCWLS = mean(crater_BCWLS,1);
+% std_crat_BCWLS = std(crater_BCWLS,0,1);
 
 fprintf("Iteration: %.d\n", altitude_sc)
 
@@ -138,7 +142,9 @@ z = z + 1;
 % % Scale errors by altitude
 % scaled_LS(:,j) = LS_errors(:,j)/altitude_sc * 100; 
 % scaled_WLS(:,j) = WLS_errors(:,j)/altitude_sc * 100;
-% end
+end
+
+end
 
 
 
@@ -199,47 +205,97 @@ z = z + 1;
 % legend('LS', 'WLS')
 % 
 % Sorted Craters
-figure
-hold on
-plot(3:num_craters, mean_crat_LS(3:end)/1000,'LineWidth', 1.5)
-plot(3:num_craters,mean_crat_WLS(3:end)/1000,'LineWidth', 1.5)
-plot(3:num_craters,mean_crat_BCWLS(3:end)/1000,'g-','LineWidth', 1.5)
-title('Mean','FontSize',20,'FontName','Times New Roman')
-xlabel('Num Craters','FontSize',20,'FontName','Times New Roman')
-ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
-legend('LS', 'WLS','BCWLS','FontSize',20,'FontName','Times New Roman')
-grid on
-
-figure
-hold on
-plot(3:num_craters,std_crat_LS(3:end)/1000 ,'LineWidth', 1.5)
-plot(3:num_craters,std_crat_WLS(3:end)/1000,'LineWidth', 1.5)
-plot(3:num_craters,std_crat_BCWLS(3:end)/1000,'g-','LineWidth', 1.5)
-title('std','FontSize',20,'FontName','Times New Roman')
-xlabel('Num Craters','FontSize',20,'FontName','Times New Roman')
-ylabel('STD km (absolute error)','FontSize',20,'FontName','Times New Roman')
-legend('LS', 'WLS','BCWLS','FontSize',20,'FontName','Times New Roman')
-grid on
+% figure
+% hold on
+% plot(3:num_craters, mean_crat_LS(3:end)/1000,'LineWidth', 1.5)
+% plot(3:num_craters,mean_crat_WLS(3:end)/1000,'LineWidth', 1.5)
+% plot(3:num_craters,mean_crat_BCWLS(3:end)/1000,'g-','LineWidth', 1.5)
+% title('Mean','FontSize',20,'FontName','Times New Roman')
+% xlabel('Num Craters','FontSize',20,'FontName','Times New Roman')
+% ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
+% legend('LS', 'WLS','BCWLS','FontSize',20,'FontName','Times New Roman')
+% grid on
+% 
+% figure
+% hold on
+% plot(3:num_craters,std_crat_LS(3:end)/1000 ,'LineWidth', 1.5)
+% plot(3:num_craters,std_crat_WLS(3:end)/1000,'LineWidth', 1.5)
+% plot(3:num_craters,std_crat_BCWLS(3:end)/1000,'g-','LineWidth', 1.5)
+% title('std','FontSize',20,'FontName','Times New Roman')
+% xlabel('Num Craters','FontSize',20,'FontName','Times New Roman')
+% ylabel('STD km (absolute error)','FontSize',20,'FontName','Times New Roman')
+% legend('LS', 'WLS','BCWLS','FontSize',20,'FontName','Times New Roman')
+% grid on
 
 altitudevec = altitude0:delta_altitude:altitudefinal;
 
 % Variation over altitude/range
-% figure
-% hold on
-% plot(altitudevec, mean_LS,'LineWidth', 1.5)
-% plot(altitudevec,mean_WLS,'LineWidth', 1.5)
-% plot(altitudevec,mean_BCWLS,'LineWidth',1.5)
-% title('Mean')
-% xlabel('Altitude')
-% ylabel('Mean (Absolute error)')
-% legend('LS', 'WLS','BCWLS')
-% 
-% figure
-% hold on
-% plot(altitudevec,std_LS ,'LineWidth', 1.5)
-% plot(altitudevec,std_WLS,'LineWidth', 1.5)
-% plot(altitudevec,std_BCWLS,'LineWidth',1.5)
-% title('std')
-% xlabel('Altitude')
-% ylabel('STD (absolute error)')
-% legend('LS', 'WLS','BCWLS')
+
+greylevels = linspace(0,0.8,5);
+
+% mean
+figure
+hold on
+for i = 1:length(solar_vec)
+    shade = [greylevels(i) greylevels(i) greylevels(i)];
+    plot(altitudevec/1000, mean_LS(i,:)/1000,'Color',shade,'LineStyle','-','LineWidth', 1.5)
+    plot(altitudevec/1000,mean_WLS(i,:)/1000,'Color',shade,'LineStyle','--','LineWidth', 1.5)
+    plot(altitudevec/1000,mean_BCWLS(i,:)/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+end
+title('Mean','FontSize',20,'FontName','Times New Roman')
+xlabel('Altitude km','FontSize',20,'FontName','Times New Roman')
+ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
+grid on
+legend({'LS', 'WLS', 'BCWLS'},'FontSize',20,'FontName','Times New Roman')
+
+
+figure % LS
+hold on
+for i = 1:length(solar_vec)
+    shade = [greylevels(i) greylevels(i) greylevels(i)];
+    plot(altitudevec/1000, mean_LS(i,:)/1000,'Color',shade,'LineStyle','-','LineWidth', 1.5)
+end
+title('Mean','FontSize',20,'FontName','Times New Roman')
+xlabel('Altitude km','FontSize',20,'FontName','Times New Roman')
+ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
+grid on
+legend({'LS'},'FontSize',20,'FontName','Times New Roman')
+
+figure % WLS
+hold on
+for i = 1:length(solar_vec)
+    shade = [greylevels(i) greylevels(i) greylevels(i)];
+    plot(altitudevec/1000,mean_WLS(i,:)/1000,'Color',shade,'LineStyle','--','LineWidth', 1.5)
+end
+title('Mean','FontSize',20,'FontName','Times New Roman')
+xlabel('Altitude km','FontSize',20,'FontName','Times New Roman')
+ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
+grid on
+legend({'WLS'},'FontSize',20,'FontName','Times New Roman')
+
+figure % BCWLS
+hold on
+for i = 1:length(solar_vec)
+    shade = [greylevels(i) greylevels(i) greylevels(i)];
+    plot(altitudevec/1000,mean_BCWLS(i,:)/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+end
+title('Mean','FontSize',20,'FontName','Times New Roman')
+xlabel('Altitude km','FontSize',20,'FontName','Times New Roman')
+ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
+grid on
+legend({'BCWLS'},'FontSize',20,'FontName','Times New Roman')
+
+% Standard Deviation
+figure
+hold on
+for i = 1:length(solar_vec)
+    shade = [greylevels(i) greylevels(i) greylevels(i)];
+    plot(altitudevec/1000,std_LS(i,:) /1000,'Color',shade,'LineStyle','-','LineWidth', 1.5)
+    plot(altitudevec/1000,std_WLS(i,:)/1000,'Color',shade,'LineStyle','--','LineWidth', 1.5)
+    plot(altitudevec/1000,std_BCWLS(i,:)/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+end
+title('std','FontSize',20,'FontName','Times New Roman')
+xlabel('Altitude km','FontSize',20,'FontName','Times New Roman')
+ylabel('STD km (absolute error)','FontSize',20,'FontName','Times New Roman')
+grid on
+legend({'WLS'},'FontSize',20,'FontName','Times New Roman')

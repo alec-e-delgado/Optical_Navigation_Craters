@@ -1,4 +1,4 @@
-function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded, leave,radii)
+function [BCWLS_e,WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc_bearing, std_expanded, mean_expanded, crater_radius)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %CRATER_POS
 %  - This script calculaes the positions of detected craters defined in
@@ -28,6 +28,8 @@ function [WLS_e, LS_e, r_crater_I_nom, r_crater_aux_nom] = crater_pos(r_sc_I, sc
 % - Note that this script locates craters using a known location for the
 % spacecraft (unit vector)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Define seed value for consistent theta
+% s1 = RandStream('mt19937ar','Seed',42);
 
 %% Find nominal alpha that gives true position of crater
 
@@ -154,17 +156,7 @@ std_azimuth_analytical = std_expanded./sqrt((4-pi)/2)./cos(elevation_nom');
 % end
 
 % Sort 
-% [azimuth_sort, idx_sort] = sort(azimuth,'ascend'); % sort by azimuth angle
-
-if leave == 1
-    [~, idx_sort] = sort(abs(azimuth),'ascend'); % sort by azimuth
-elseif leave == 2
-    [~, idx_sort] = sort(std_expanded,'ascend'); % sort by std
-elseif leave == 3
-    [~, idx_sort] = sort(std_azimuth_analytical,'ascend'); % sort by azimuth std
-elseif leave == 4 % sort by crater radius
-    [~, idx_sort] = sort(radii,'descend'); % sort by azimuth std
-end
+[azimuth_sort, idx_sort] = sort(crater_radius,'descend');
 azimuth = azimuth(idx_sort);
 elevation = elevation(idx_sort);
 r_crater_LOS_nom = r_crater_LOS_nom(:,idx_sort);
@@ -179,8 +171,8 @@ num_craters = length(r_crater_LOS_nom); % number of measurements
 % Pre-allocate space for A and z matrices
 
 
-for L = 3:num_craters % use first best craters
-% for L = num_craters:num_craters % use all craters
+% for L = 3:num_craters % use first best craters
+for L = num_craters:num_craters % use all craters
 A = zeros(2*L, 3);
 z = zeros(2*L, 1); 
 for i = 1:L
@@ -252,45 +244,45 @@ g_WLS_LOS = inv(A'*W_block*A)*A'*W_block*z;
 % Store absolute error
 WLS_e(L) = norm(g_WLS_LOS);
 
-end
-
 % fprintf("WLS Distance error: %.4f km \n", norm(g_WLS_LOS)/1000)
 
 
 %% Bias-Compensated Weighted Least Squares (BCWLS)
 
 % Pre allocate m matrix
-% m_matrix = zeros(3,L);
-% 
-% for i = 1:L
-% 
-%     % Extract Wn and elements
-%     W_n = W_block(2*i-1:2*i, 2*i-1:2*i);
-%     a_n = W_n(1,1);
-%     b_n = W_n(1,2);
-%     c_n = W_n(2,2);
-% 
-%     % Form a vectors
-%     a_1n = [cos(azimuth(i));sin(azimuth(i));0];
-%     a_2n = [sin(azimuth(i))*sin(elevation(i));-cos(azimuth(i))*sin(elevation(i));0];
-%     a_3n = -[cos(azimuth(i))*cos(elevation(i));sin(azimuth(i))*cos(elevation(i));sin(elevation(i))];
-% 
-%     % Form g vectors
-%     g_1n = -do(i)*cos(elevation(i))*std_azimuth_analytical(i)^2*(a_n*a_1n+b_n*a_2n);
-%     g_2n = c_n*do(i)*a_3n*std_elevation_analytical(i)^2;
-% 
-%     % Calc m and save
-%     m_n = g_1n+g_2n;
-%     m_matrix(:,i) = m_n;
-% end
-% 
-% Atwn = sum(m_matrix,2);
-% 
-% gamma_gWLS = inv(A'*W_block*A)*Atwn;
-% 
-% g_BCWLS_LOS = g_WLS_LOS-gamma_gWLS;
+m_matrix = zeros(3,L);
+
+for i = 1:L
+
+    % Extract Wn and elements
+    W_n = W_block(2*i-1:2*i, 2*i-1:2*i);
+    a_n = W_n(1,1);
+    b_n = W_n(1,2);
+    c_n = W_n(2,2);
+
+    % Form a vectors
+    a_1n = [cos(azimuth(i));sin(azimuth(i));0];
+    a_2n = [sin(azimuth(i))*sin(elevation(i));-cos(azimuth(i))*sin(elevation(i));0];
+    a_3n = -[cos(azimuth(i))*cos(elevation(i));sin(azimuth(i))*cos(elevation(i));sin(elevation(i))];
+
+    % Form g vectors
+    g_1n = -do(i)*cos(elevation(i))*std_azimuth_analytical(i)^2*(a_n*a_1n+b_n*a_2n);
+    g_2n = c_n*do(i)*a_3n*std_elevation_analytical(i)^2;
+
+    % Calc m and save
+    m_n = g_1n+g_2n;
+    m_matrix(:,i) = m_n;
+end
+
+Atwn = sum(m_matrix,2);
+
+gamma_gWLS = inv(A'*W_block*A)*Atwn;
+
+g_BCWLS_LOS = g_WLS_LOS+gamma_gWLS;
+
+BCWLS_e(L) = norm(g_BCWLS_LOS);
 
 % fprintf("BCWLS Distance error: %.4f km \n", norm(g_BCWLS_LOS)/1000)
 
-
+end
 end
