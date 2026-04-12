@@ -13,6 +13,8 @@ close all; clear; clc;
 %  - Convergence: Tests for the number of Monte Carlo Simulations needed
 %  for the mean error and std to converge
 %  - Altitudes: Estimates poisitional error over various altitudes
+%  - Solar Phase: Altitude test across different solar phase angles, only
+%    considers BCWLS
 %
 % INPUTS
 %  - Which experiments to run
@@ -28,19 +30,24 @@ close all; clear; clc;
 %% INPUT
 
 % Define which tests to run (true or false)
-test_convergence = true;
-test_altitudes = true;
+test_convergence = false;
+test_altitudes = false;
+test_solar_phase = true;
 
 % Convergence Experiment
 distance_conv = 10000;    % (km) run at this altitude
-N = 1000;                % runs for Monte Carlo Simulation
+N = 5000;                % runs for Monte Carlo Simulation
 
 % Altitudes Experiment
 ditance0 = 10000;         % (km) initial altitude above moons surface 
 distance_final = 97000;   % (km) final altitutde to estimate at  
-delta_distance = 500;    % (km) 
+delta_distance = 1000;     % (km) 
 iter = 1;                 % iterator
 
+% Solar Phase Experiment
+solar_angle0 = 0;         % (deg) initial solar angle
+solar_angle_final = 120;  % (deg) final solar angle 
+solar_delta = 20;         % (deg) 
 
 %% Constants 
 moon_angle = 90;                        % (deg) incidence angle with moon surface 
@@ -159,10 +166,11 @@ end
 
 %% Altitudes Experiment 
 
+
 if test_altitudes
 
     fprintf("------------------------- Altitudes Test -------------------------\n")
-
+    
     distance_sc = ditance0*10^3;        % (m) initialize
     r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
 
@@ -249,6 +257,7 @@ if test_altitudes
 
         % Update Values
         distance_sc = distance_sc + delta_distance*10^3; % (m)
+        r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
         iter = iter + 1;
     end
 
@@ -278,6 +287,126 @@ if test_altitudes
     ylabel('STD Range error (km)')
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
 end
+
+%% Solar Phase Experiment 
+
+
+if test_solar_phase
+
+    fprintf("------------------------- Solar Phase Test -------------------------\n")
+    
+    num_solar_phase = (solar_angle_final-solar_angle0)/solar_delta + 1;
+    solar_angle = solar_angle0;                   % (deg) Initialize
+    greylevels = linspace(0,0.8,num_solar_phase); % for plotting
+    solar_idx = 1;                                % index for plotting
+    
+    while solar_angle <= solar_angle_final 
+
+    fprintf("Computing estimate at %.f deg\n", solar_angle)
+    
+    distance_sc = ditance0*10^3;        % (m) initialize
+    r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
+    iter = 1;
+
+    num_iter = round((distance_final-ditance0)/delta_distance) + 1; % for initialization
+    dist_list = zeros(num_iter,1);                                  % storing distances
+
+    % Initialize errors 
+    dist_BCWLS_errors = zeros(num_iter, N);
+    dist_mean_BCWLS = zeros(num_iter, 1);
+    dist_std_BCWLS = zeros(num_iter, 1);
+
+    while distance_sc <= distance_final*10^3 % m
+
+        dist_list(iter) = distance_sc; % m
+
+        % Get detected crater uncertainty
+        [~,repeat_matrix_detections,~,~,~] = angular_error_calc(distance_sc/1000, solar_angle);
+        mat_size = size(repeat_matrix_detections);
+        num_craters = mat_size(1); 
+    
+        % Extract statistical quantities from matrix for each crater
+        sc_bearings = repeat_matrix_detections(:, 3);   % (deg) angle from normal to crater
+        std_dev_norm = repeat_matrix_detections(:,2);   % (normalized) standard deviation
+        mean_norm = repeat_matrix_detections(:,1);      % (normalized) mean
+        crater_radius = repeat_matrix_detections(:, 4); % (m)
+    
+        % Un-normalize standard deviation and mean values by moon angular area
+        moon_ang_area = 2*rad2deg(asin(1737.4/(distance_sc/1000))); % normalization factor
+        std_dev_unnorm = deg2rad(std_dev_norm*moon_ang_area/100);   % unnormalized
+        mean_unnorm = deg2rad(mean_norm*moon_ang_area/100);         % unnormalized
+    
+        % Treat ill standard deviation values
+        idx_Nan = find(isnan(std_dev_unnorm)); % finds indices of Nan values
+        std_dev_unnorm(idx_Nan) = [];          % remove Nan values
+        mean_unnorm(idx_Nan) = [];
+        sc_bearings(idx_Nan) = [];
+        crater_radius(idx_Nan) = [];
+    
+        idx_zero = find(std_dev_unnorm == 0);  % finds indices of 0 std devs value
+        std_dev_unnorm(idx_zero) = [];         % remove 0 values
+        mean_unnorm(idx_zero) = [];
+        sc_bearings(idx_zero) = [];
+        crater_radius(idx_zero) = [];
+
+        for i = 1:N % Monte Carlo iterations
+
+            % Generate angular measurements and get uncertainty
+            [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
+    
+            % LS estimate error
+            [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
+    
+            % WLS estimate error
+            [pos_WLS_est,WLS_error,W_block,do] = WLS_estimate(std_azimuth, std_elevation, meas_azimuth,meas_elevation,r_crater_LOS_nom,pos_LS_est,A_mat,z_mat);
+    
+            % BCWLS esimtate error
+            [pos_BCWLS_est,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
+    
+            % Store values
+            dist_BCWLS_errors(iter,i) = BCWLS_error;
+        end
+
+        % Calculate Mean and STD values
+        dist_mean_BCWLS(iter) = mean(dist_BCWLS_errors(iter,:));   % BCWLS
+        dist_std_BCWLS(iter) = std(dist_BCWLS_errors(iter,:),0,2);
+
+        % Update Values
+        distance_sc = distance_sc + delta_distance*10^3; % (m)
+        r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
+        iter = iter + 1;
+    end
+
+    % Update Solar Angle 
+    solar_angle = solar_angle + solar_delta; % (deg)
+
+    % Plots
+    shade = [greylevels(solar_idx) greylevels(solar_idx) greylevels(solar_idx)];
+
+    figure(10) % mean
+    hold on
+    ax = gca;
+    ax.FontSize = 18;
+    ax.FontName = 'Times New Roman';
+    plot(dist_list/1000000,dist_mean_BCWLS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+    xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
+    ylabel('Mean Range error (km)')
+    legend('BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    
+    figure(11) % standard deviation
+    hold on
+    ax = gca;
+    ax.FontSize = 18;
+    ax.FontName = 'Times New Roman';
+    plot(dist_list/1000000,dist_std_BCWLS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+    xlabel('Distance (km $\times$ 10$^3$)','Interpreter','latex')
+    ylabel('STD Range error (km)')
+    legend('BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+
+    solar_idx = solar_idx+1; % update index value
+    end
+end
+
 
 
 
