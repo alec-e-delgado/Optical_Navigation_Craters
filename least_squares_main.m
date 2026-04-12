@@ -32,13 +32,13 @@ test_convergence = true;
 test_altitudes = true;
 
 % Convergence Experiment
-distance_conv = 35000;    % (km) run at this altitude
-N = 10000;                % runs for Monte Carlo Simulation
+distance_conv = 10000;    % (km) run at this altitude
+N = 1000;                % runs for Monte Carlo Simulation
 
 % Altitudes Experiment
-ditance0 = 35000;         % (km) initial altitude above moons surface 
+ditance0 = 10000;         % (km) initial altitude above moons surface 
 distance_final = 97000;   % (km) final altitutde to estimate at  
-delta_distance = 500;     % (km) 
+delta_distance = 500;    % (km) 
 iter = 1;                 % iterator
 
 
@@ -53,7 +53,7 @@ if test_convergence % run if desired
 
     fprintf("------------------------ Convergence Test ------------------------\n")
 
-    distance_sc = distance_conv*10^3;                % (m) Initialize 
+    distance_sc = distance_conv*10^3;   % (m) Initialize 
     r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
 
     % Get detected crater uncertainty
@@ -71,8 +71,8 @@ if test_convergence % run if desired
 
     % Un-normalize standard deviation and mean values by moon angular area
     moon_ang_area = 2*rad2deg(asin(1737.4/(distance_sc/1000))); % normalization factor
-    std_dev_unnorm = deg2rad(std_dev_norm*moon_ang_area/100);   % unnormalized
-    mean_unnorm = deg2rad(mean_norm*moon_ang_area/100);         % unnormalized
+    std_dev_unnorm = deg2rad(std_dev_norm*moon_ang_area/100);   % (rad) unnormalized
+    mean_unnorm = deg2rad(mean_norm*moon_ang_area/100);         % (rad) unnormalized
 
     % Treat ill standard deviation values
     idx_Nan = find(isnan(std_dev_unnorm)); % finds indices of Nan values
