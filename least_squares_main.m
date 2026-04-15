@@ -34,13 +34,13 @@ close all; clear; clc;
 %% INPUT
 
 % Define which tests to run (true or false)
-test_convergence = false;
+test_convergence = true;
 test_altitudes = false;
 test_solar_phase = false;
-test_sort = true; 
+test_sort = false; 
 
 % Convergence Experiment
-distance_conv = 10000;    % (km) run at this altitude
+distance_conv = 40000;    % (km) run at this altitude
 N = 10000;                % runs for Monte Carlo Simulation
 
 % Distances Experiment
@@ -177,7 +177,7 @@ end
 
 if test_altitudes
 
-    fprintf("------------------------- Altitudes Test -------------------------\n")
+    fprintf("------------------------- Distances Test -------------------------\n")
     
     distance_sc = ditance0*10^3;        % (m) initialize
     r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
@@ -257,13 +257,14 @@ if test_altitudes
             [pos_BCWLS_est,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
     
             % Store values
-            dist_LS_errors(iter,i) = LS_error;       % (m) Range errors
+            dist_LS_errors(iter,i) = LS_error;               % (m) Range errors
             dist_WLS_errors(iter,i) = WLS_error;
             dist_BCWLS_errors(iter,i) = BCWLS_error;
 
-            pos_error_LOS = abs(pos_BCWLS_est(2));   % (m) Coordinate errors
-            pos_error_HCA = abs(pos_BCWLS_est(1));
-            pos_error_VCA = abs(pos_BCWLS_est(3));
+            pos_error_LOS(iter,i) = abs(pos_BCWLS_est(2));   % (m) Coordinate errors
+            pos_error_HCA(iter,i) = abs(pos_BCWLS_est(1));
+            pos_error_VCA(iter,i) = abs(pos_BCWLS_est(3));
+            
         end
 
         % Calculate Mean and STD values
@@ -276,9 +277,9 @@ if test_altitudes
         dist_mean_BCWLS(iter) = mean(dist_BCWLS_errors(iter,:));   % BCWLS
         dist_std_BCWLS(iter) = std(dist_BCWLS_errors(iter,:),0,2);
 
-        pos_mean_LOS(iter) = mean(pos_error_LOS); 
-        pos_mean_HCA(iter) = mean(pos_error_HCA);
-        pos_mean_VCA(iter) = mean(pos_error_VCA);
+        pos_mean_LOS(iter) = mean(pos_error_LOS(iter,:)); 
+        pos_mean_HCA(iter) = mean(pos_error_HCA(iter,:));
+        pos_mean_VCA(iter) = mean(pos_error_VCA(iter,:));
 
         % Update Values
         distance_sc = distance_sc + delta_distance*10^3; % (m)
@@ -360,6 +361,16 @@ if test_solar_phase
     dist_mean_BCWLS = zeros(num_iter, 1);
     dist_std_BCWLS = zeros(num_iter, 1);
 
+
+    % Coordiante estimate errors in LOS reference frame
+    pos_error_LOS = zeros(num_iter, N); % (y) Line-of-sight axis 
+    pos_error_HCA = zeros(num_iter, N); % (x) Horizontal cross-axis
+    pos_error_VCA = zeros(num_iter, N); % (z) Vertical cross-axis
+
+    pos_mean_LOS = zeros(num_iter, 1);  % (m) average coordinate errors
+    pos_mean_HCA = zeros(num_iter, 1); 
+    pos_mean_VCA = zeros(num_iter, 1);
+
     while distance_sc <= distance_final*10^3 % m
 
         dist_list(iter) = distance_sc; % m
@@ -408,16 +419,24 @@ if test_solar_phase
             [pos_BCWLS_est,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
     
             % Store values
-            dist_BCWLS_errors(iter,i) = BCWLS_error;
+            dist_BCWLS_errors(iter,i) = BCWLS_error; % (m) range error
+
+            pos_error_LOS(iter,i) = abs(pos_BCWLS_est(2));   % (m) Coordinate errors
+            pos_error_HCA(iter,i) = abs(pos_BCWLS_est(1));
+            pos_error_VCA(iter,i) = abs(pos_BCWLS_est(3));
         end
 
         % Calculate Mean and STD values
         dist_mean_BCWLS(iter) = mean(dist_BCWLS_errors(iter,:));   % BCWLS
         dist_std_BCWLS(iter) = std(dist_BCWLS_errors(iter,:),0,2);
 
+        pos_mean_LOS(iter) = mean(pos_error_LOS(iter,:));          % position errors
+        pos_mean_HCA(iter) = mean(pos_error_HCA(iter,:));
+        pos_mean_VCA(iter) = mean(pos_error_VCA(iter,:));
+
         % Update Values
         distance_sc = distance_sc + delta_distance*10^3; % (m)
-        r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
+        r_sc_I = inertial_uv*(distance_sc);              % (m) Inertial position vector
         iter = iter + 1;
     end
 
@@ -447,8 +466,29 @@ if test_solar_phase
     ylabel('STD Range error (km)')
     box on
 
+    figure(12) % Coordinate position errors
+    subplot(3,1,1); hold on; plot(dist_list/1000000,pos_mean_LOS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+    subplot(3,1,2); hold on; plot(dist_list/1000000,pos_mean_HCA/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+    subplot(3,1,3); hold on; plot(dist_list/1000000,pos_mean_VCA/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
+
     solar_idx = solar_idx+1; % update index value
     end
+
+    figure(12)
+    subplot(3,1,1); box on
+    subplot(3,1,2); box on
+    subplot(3,1,3); box on
+    han=axes(figure(12),'visible','off'); 
+    xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
+    ylabel('Position estimation error (km)')
+    han.Title.Visible='on';
+    han.XLabel.Visible='on';
+    han.YLabel.Visible='on';
+    ylabel(han,'Absolute position estimation error (km)');
+    xlabel(han,'Distance (km $\times$ 10$^3$)','Interpreter','latex');
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
 end
 
 %% Sorting Experiment
