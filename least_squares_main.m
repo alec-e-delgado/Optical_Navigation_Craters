@@ -12,9 +12,13 @@ close all; clear; clc;
 % EXPERIMENTS
 %  - Convergence: Tests for the number of Monte Carlo Simulations needed
 %  for the mean error and std to converge
-%  - Altitudes: Estimates poisitional error over various altitudes
+%  - Distances: Estimates poisitional error over various distances
 %  - Solar Phase: Altitude test across different solar phase angles, only
 %    considers BCWLS
+%       - Computed using BCWLS estimate
+%  - Sorting: Sort the measurements using different metrics and use the n
+%    best
+%       - angular std, crater radius, azimuth
 %
 % INPUTS
 %  - Which experiments to run
@@ -32,22 +36,25 @@ close all; clear; clc;
 % Define which tests to run (true or false)
 test_convergence = false;
 test_altitudes = false;
-test_solar_phase = true;
+test_solar_phase = false;
+test_sort = true; 
 
 % Convergence Experiment
 distance_conv = 10000;    % (km) run at this altitude
-N = 5000;                % runs for Monte Carlo Simulation
+N = 10000;                % runs for Monte Carlo Simulation
 
-% Altitudes Experiment
-ditance0 = 10000;         % (km) initial altitude above moons surface 
-distance_final = 97000;   % (km) final altitutde to estimate at  
-delta_distance = 1000;     % (km) 
+% Distances Experiment
+ditance0 = 10000;         % (km) initial distance from Moon center
+distance_final = 97000;   % (km) final distance to estimate at  
+delta_distance = 1000;    % (km) 
 iter = 1;                 % iterator
 
 % Solar Phase Experiment
 solar_angle0 = 0;         % (deg) initial solar angle
 solar_angle_final = 120;  % (deg) final solar angle 
 solar_delta = 20;         % (deg) 
+
+% Sorting Experiment
 
 %% Constants 
 moon_angle = 90;                        % (deg) incidence angle with moon surface 
@@ -142,7 +149,7 @@ if test_convergence % run if desired
     figure % mean
     hold on
     ax = gca;
-    ax.FontSize = 18;
+    ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     plot(1:N,conv_mean_LS/1000,'r-','LineWidth', 1.5)
     plot(1:N,conv_mean_WLS/1000,'k-','LineWidth', 1.5)
@@ -150,11 +157,12 @@ if test_convergence % run if desired
     xlabel('Runs')
     ylabel('Mean Range error (km)')
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
     
     figure % standard deviation
     hold on
     ax = gca;
-    ax.FontSize = 18;
+    ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     plot(1:N,conv_std_LS/1000 ,'r-','LineWidth', 1.5)
     plot(1:N,conv_std_WLS/1000,'k-','LineWidth', 1.5)
@@ -162,10 +170,10 @@ if test_convergence % run if desired
     xlabel('Runs')
     ylabel('STD Range error (km)')
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
 end
 
-%% Altitudes Experiment 
-
+%% Distances Experiment 
 
 if test_altitudes
 
@@ -189,6 +197,15 @@ if test_altitudes
     dist_BCWLS_errors = zeros(num_iter, N);
     dist_mean_BCWLS = zeros(num_iter, 1);
     dist_std_BCWLS = zeros(num_iter, 1);
+
+    % Coordiante estimate errors in LOS reference frame
+    pos_error_LOS = zeros(num_iter, N); % (y) Line-of-sight axis 
+    pos_error_HCA = zeros(num_iter, N); % (x) Horizontal cross-axis
+    pos_error_VCA = zeros(num_iter, N); % (z) Vertical cross-axis
+
+    pos_mean_LOS = zeros(num_iter, 1);  % (m) average coordinate errors
+    pos_mean_HCA = zeros(num_iter, 1); 
+    pos_mean_VCA = zeros(num_iter, 1); 
 
     while distance_sc <= distance_final*10^3 % m
 
@@ -240,9 +257,13 @@ if test_altitudes
             [pos_BCWLS_est,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
     
             % Store values
-            dist_LS_errors(iter,i) = LS_error;
+            dist_LS_errors(iter,i) = LS_error;       % (m) Range errors
             dist_WLS_errors(iter,i) = WLS_error;
             dist_BCWLS_errors(iter,i) = BCWLS_error;
+
+            pos_error_LOS = abs(pos_BCWLS_est(2));   % (m) Coordinate errors
+            pos_error_HCA = abs(pos_BCWLS_est(1));
+            pos_error_VCA = abs(pos_BCWLS_est(3));
         end
 
         % Calculate Mean and STD values
@@ -255,6 +276,10 @@ if test_altitudes
         dist_mean_BCWLS(iter) = mean(dist_BCWLS_errors(iter,:));   % BCWLS
         dist_std_BCWLS(iter) = std(dist_BCWLS_errors(iter,:),0,2);
 
+        pos_mean_LOS(iter) = mean(pos_error_LOS); 
+        pos_mean_HCA(iter) = mean(pos_error_HCA);
+        pos_mean_VCA(iter) = mean(pos_error_VCA);
+
         % Update Values
         distance_sc = distance_sc + delta_distance*10^3; % (m)
         r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
@@ -266,7 +291,7 @@ if test_altitudes
     figure % mean
     hold on
     ax = gca;
-    ax.FontSize = 18;
+    ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     plot(dist_list/1000000,dist_mean_LS/1000,'r-','LineWidth', 1.5)
     plot(dist_list/1000000,dist_mean_WLS/1000,'k-','LineWidth', 1.5)
@@ -274,11 +299,12 @@ if test_altitudes
     xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
     ylabel('Mean Range error (km)')
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
     
     figure % standard deviation
     hold on
     ax = gca;
-    ax.FontSize = 18;
+    ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     plot(dist_list/1000000,dist_std_LS/1000 ,'r-','LineWidth', 1.5)
     plot(dist_list/1000000,dist_std_WLS/1000,'k-','LineWidth', 1.5)
@@ -286,6 +312,24 @@ if test_altitudes
     xlabel('Distance (km $\times$ 10$^3$)','Interpreter','latex')
     ylabel('STD Range error (km)')
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
+
+    fig = figure; % Coordinate errors
+    subplot(3,1,1); plot(dist_list/1000000,pos_mean_LOS/1000,'g-','LineWidth', 1.5)
+    subplot(3,1,2); plot(dist_list/1000000,pos_mean_HCA/1000,'g-','LineWidth', 1.5)
+    subplot(3,1,3); plot(dist_list/1000000,pos_mean_VCA/1000,'g-','LineWidth', 1.5)
+    han=axes(fig,'visible','off'); 
+    xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
+    ylabel('Position estimation error (km)')
+    han.Title.Visible='on';
+    han.XLabel.Visible='on';
+    han.YLabel.Visible='on';
+    ylabel(han,'Absolute position estimation error (km)');
+    xlabel(han,'Distance (km $\times$ 10$^3$)','Interpreter','latex');
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    box on
 end
 
 %% Solar Phase Experiment 
@@ -386,25 +430,240 @@ if test_solar_phase
     figure(10) % mean
     hold on
     ax = gca;
-    ax.FontSize = 18;
+    ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     plot(dist_list/1000000,dist_mean_BCWLS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
     xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
     ylabel('Mean Range error (km)')
-    legend('BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
     
     figure(11) % standard deviation
     hold on
     ax = gca;
-    ax.FontSize = 18;
+    ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     plot(dist_list/1000000,dist_std_BCWLS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
     xlabel('Distance (km $\times$ 10$^3$)','Interpreter','latex')
     ylabel('STD Range error (km)')
-    legend('BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
 
     solar_idx = solar_idx+1; % update index value
     end
+end
+
+%% Sorting Experiment
+
+if test_sort
+
+    fprintf("------------------------- Sorting Test -------------------------\n")
+    
+    distance_sc = 45000*10^3;        % (m) initialize
+    r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
+
+    % Get detected crater uncertainty
+    [~,repeat_matrix_detections,~,~,~] = angular_error_calc(distance_sc/1000, moon_angle);
+    mat_size = size(repeat_matrix_detections);
+    num_craters = mat_size(1); 
+
+    % Initialize errors 
+    dist_LS_errors_std = zeros(num_craters, N); % angle std
+
+    dist_WLS_errors_std = zeros(num_craters, N);
+
+    dist_BCWLS_errors_std = zeros(num_craters, N);
+
+    dist_LS_errors_rad = zeros(num_craters, N); % crater radius
+
+    dist_WLS_errors_rad = zeros(num_craters, N);
+
+    dist_BCWLS_errors_rad = zeros(num_craters, N);
+
+    dist_LS_errors_az = zeros(num_craters, N); % measured azimuth
+
+    dist_WLS_errors_az = zeros(num_craters, N);
+
+    dist_BCWLS_errors_az = zeros(num_craters, N);
+
+    % Extract statistical quantities from matrix for each crater
+    sc_bearings = repeat_matrix_detections(:, 3);   % (deg) angle from normal to crater
+    std_dev_norm = repeat_matrix_detections(:,2);   % (normalized) standard deviation
+    mean_norm = repeat_matrix_detections(:,1);      % (normalized) mean
+    crater_radius = repeat_matrix_detections(:, 4); % (m)
+
+    % Un-normalize standard deviation and mean values by moon angular area
+    moon_ang_area = 2*rad2deg(asin(1737.4/(distance_sc/1000))); % normalization factor
+    std_dev_unnorm = deg2rad(std_dev_norm*moon_ang_area/100);   % unnormalized
+    mean_unnorm = deg2rad(mean_norm*moon_ang_area/100);         % unnormalized
+
+    % Treat ill standard deviation values
+    idx_Nan = find(isnan(std_dev_unnorm)); % finds indices of Nan values
+    std_dev_unnorm(idx_Nan) = [];          % remove Nan values
+    mean_unnorm(idx_Nan) = [];
+    sc_bearings(idx_Nan) = [];
+    crater_radius(idx_Nan) = [];
+
+    idx_zero = find(std_dev_unnorm == 0);  % finds indices of 0 std devs value
+    std_dev_unnorm(idx_zero) = [];         % remove 0 values
+    mean_unnorm(idx_zero) = [];
+    sc_bearings(idx_zero) = [];
+    crater_radius(idx_zero) = [];
+
+    fprintf("%.f detected craters\n\n", num_craters)
+
+    for idx = 3:num_craters % use all craters
+
+        fprintf("Computing %.f best craters\n", idx)
+
+        for i = 1:N % Monte Carlo iterations
+
+        % Generate angular measurements and get uncertainty
+        [std_elevation_og,std_azimuth_og,meas_azimuth_og,meas_elevation_og,r_crater_LOS_nom_og] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
+
+        % Sort values by angle std
+        [~, idx_sort_std] = sort(std_dev_unnorm,'ascend');
+        meas_azimuth = meas_azimuth_og(idx_sort_std);
+        meas_elevation = meas_elevation_og(idx_sort_std);
+        r_crater_LOS_nom = r_crater_LOS_nom_og(:,idx_sort_std);                                  
+        std_azimuth = std_azimuth_og(idx_sort_std);
+        std_elevation = std_elevation_og(idx_sort_std);
+
+        meas_azimuth = meas_azimuth(1:idx); % get idx best values
+        meas_elevation = meas_elevation(1:idx);
+        r_crater_LOS_nom = r_crater_LOS_nom(:,1:idx);
+        std_azimuth = std_azimuth(1:idx);
+        std_elevation = std_elevation(1:idx);
+        
+
+        % LS estimate error
+        [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
+
+        % WLS estimate error
+        [pos_WLS_est,WLS_error,W_block,do] = WLS_estimate(std_azimuth, std_elevation, meas_azimuth,meas_elevation,r_crater_LOS_nom,pos_LS_est,A_mat,z_mat);
+
+        % BCWLS esimtate error
+        [~,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
+
+        % Store values
+        dist_LS_errors_std(idx,i) = LS_error;       % (m) Range errors
+        dist_WLS_errors_std(idx,i) = WLS_error;
+        dist_BCWLS_errors_std(idx,i) = BCWLS_error;
+
+
+        % Sort values by crater radius
+        [~, idx_sort_rad] = sort(crater_radius,'descend');
+        meas_azimuth = meas_azimuth_og(idx_sort_rad);
+        meas_elevation = meas_elevation_og(idx_sort_rad);
+        r_crater_LOS_nom = r_crater_LOS_nom_og(:,idx_sort_rad);                                  
+        std_azimuth = std_azimuth_og(idx_sort_rad);
+        std_elevation = std_elevation_og(idx_sort_rad);
+
+        meas_azimuth = meas_azimuth(1:idx); % get idx best values
+        meas_elevation = meas_elevation(1:idx);
+        r_crater_LOS_nom = r_crater_LOS_nom(:,1:idx);
+        std_azimuth = std_azimuth(1:idx);
+        std_elevation = std_elevation(1:idx);
+        
+
+        % LS estimate error
+        [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
+
+        % WLS estimate error
+        [pos_WLS_est,WLS_error,W_block,do] = WLS_estimate(std_azimuth, std_elevation, meas_azimuth,meas_elevation,r_crater_LOS_nom,pos_LS_est,A_mat,z_mat);
+
+        % BCWLS esimtate error
+        [~,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
+
+        % Store values
+        dist_LS_errors_rad(idx,i) = LS_error;       % (m) Range errors
+        dist_WLS_errors_rad(idx,i) = WLS_error;
+        dist_BCWLS_errors_rad(idx,i) = BCWLS_error;
+
+
+        % Sort values by measured azimuth
+        [~, idx_sort_az] = sort(meas_azimuth,'ascend');
+        meas_azimuth = meas_azimuth_og(idx_sort_az);
+        meas_elevation = meas_elevation_og(idx_sort_az);
+        r_crater_LOS_nom = r_crater_LOS_nom_og(:,idx_sort_az);                                  
+        std_azimuth = std_azimuth_og(idx_sort_az);
+        std_elevation = std_elevation_og(idx_sort_az);
+
+        meas_azimuth = meas_azimuth(1:idx); % get idx best values
+        meas_elevation = meas_elevation(1:idx);
+        r_crater_LOS_nom = r_crater_LOS_nom(:,1:idx);
+        std_azimuth = std_azimuth(1:idx);
+        std_elevation = std_elevation(1:idx);
+        
+
+        % LS estimate error
+        [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
+
+        % WLS estimate error
+        [pos_WLS_est,WLS_error,W_block,do] = WLS_estimate(std_azimuth, std_elevation, meas_azimuth,meas_elevation,r_crater_LOS_nom,pos_LS_est,A_mat,z_mat);
+
+        % BCWLS esimtate error
+        [~,BCWLS_error] = BCWLS_estimate(std_azimuth,std_elevation,meas_azimuth,meas_elevation,pos_WLS_est,A_mat,W_block,do);
+
+        % Store values
+        dist_LS_errors_az(idx,i) = LS_error;       % (m) Range errors
+        dist_WLS_errors_az(idx,i) = WLS_error;
+        dist_BCWLS_errors_az(idx,i) = BCWLS_error;
+        end
+
+    end
+
+    % Calculate Mean values
+    dist_mean_LS_std = mean(dist_LS_errors_std,2);         % LS
+    dist_mean_LS_rad = mean(dist_LS_errors_rad,2);
+    dist_mean_LS_az = mean(dist_LS_errors_az,2);
+
+    dist_mean_WLS_std = mean(dist_WLS_errors_std,2);       % WLS
+    dist_mean_WLS_rad = mean(dist_WLS_errors_rad,2);
+    dist_mean_WLS_az = mean(dist_WLS_errors_az,2);
+
+    dist_mean_BCWLS_std = mean(dist_BCWLS_errors_std,2);   % BCWLS
+    dist_mean_BCWLS_rad = mean(dist_BCWLS_errors_rad,2);
+    dist_mean_BCWLS_az = mean(dist_BCWLS_errors_az,2);
+
+    % Plots
+
+    figure % std
+    hold on
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    plot(3:num_craters,dist_mean_LS_std(3:end)/1000,'r-','LineWidth', 1.5)
+    plot(3:num_craters,dist_mean_WLS_std(3:end)/1000,'k-','LineWidth', 1.5)
+    plot(3:num_craters,dist_mean_BCWLS_std(3:end)/1000,'g--','LineWidth', 1.5)
+    xlabel('Number of craters')
+    ylabel('Mean Range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
+    
+    figure % crater radius
+    hold on
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    plot(3:num_craters,dist_mean_LS_rad(3:end)/1000,'r-','LineWidth', 1.5)
+    plot(3:num_craters,dist_mean_WLS_rad(3:end)/1000,'k-','LineWidth', 1.5)
+    plot(3:num_craters,dist_mean_BCWLS_rad(3:end)/1000,'g--','LineWidth', 1.5)
+    xlabel('Number of craters')
+    ylabel('Mean Range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
+
+    figure % azimuth
+    hold on
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    plot(3:num_craters,dist_mean_LS_az(3:end)/1000,'r-','LineWidth', 1.5)
+    plot(3:num_craters,dist_mean_WLS_az(3:end)/1000,'k-','LineWidth', 1.5)
+    plot(3:num_craters,dist_mean_BCWLS_az(3:end)/1000,'g--','LineWidth', 1.5)
+    xlabel('Number of craters')
+    ylabel('Mean Range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    box on
 end
 
 
