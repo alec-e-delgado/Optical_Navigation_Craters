@@ -9,10 +9,10 @@ function [pos_estimate,BCWLS_e] = BCWLS_estimate(std_azimuth, std_elevation, mea
 %   std_azimuth      - (rad) analytical standard deviation of azimuth
 %   meas_azimuth     - (rad) measured azimuth angle in LOS frame
 %   meas_elevation   - (rad) measured elevation angle in LOS frame
-%   pos_WLS_est      - (m) WLS position estimate of SC in LOS frame
+%   pos_WLS_est      - (m)   WLS position estimate of SC in LOS frame
 %   A                - system matrix from LS computation
 %   W_block          - matrix of stacked weights
-%   do               - (m) vector of distances from craters to LS estimate
+%   do               - (m)   vector of distances from craters to LS estimate
 %
 % OUTPUTS
 %   pos_estimate - (m) the position estimae of the SC in LOS frame

@@ -6,12 +6,15 @@ close all; clear; clc;
 % position and compares their absolute errors
 %
 % DESCRIPTION
-%  - Defines simulation constants and initial conditions
-%  - Calls dynamics, control, and plotting functions
+%  - Runs several experiments to characterize LS, WLS, BCWLS estimators 
+%  from angle only measurements
 %
 % EXPERIMENTS
+%  - Angular error: Shows histogram of angular errors for bearing, azimuth,
+%    and elevation angles
 %  - Convergence: Tests for the number of Monte Carlo Simulations needed
-%  for the mean error and std to converge
+%    for the mean error and std to converge
+%       - Includes histogram plots
 %  - Distances: Estimates poisitional error over various distances
 %  - Solar Phase: Altitude test across different solar phase angles, only
 %    considers BCWLS
@@ -34,7 +37,8 @@ close all; clear; clc;
 %% INPUT
 
 % Define which tests to run (true or false)
-test_convergence = true;
+test_angular_error = true;
+test_convergence = false;
 test_altitudes = false;
 test_solar_phase = false;
 test_sort = false; 
@@ -55,11 +59,92 @@ solar_angle_final = 120;  % (deg) final solar angle
 solar_delta = 20;         % (deg) 
 
 % Sorting Experiment
+distance_sorting = 45000; % (km)
 
 %% Constants 
 moon_angle = 90;                        % (deg) incidence angle with moon surface 
 radius_Moon = 1.7374e6;                 % (m)
 inertial_uv = [0.4811; 0.2580; 0.8379]; % direction of spacecraft position
+
+%% Angular Error Experiment
+
+if test_angular_error
+
+    fprintf("------------------------ Angular Error Test ------------------------\n")
+
+    distance_sc = distance_conv*10^3;   % (m) Initialize 
+    r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
+
+    % Get detected crater uncertainty
+    [~,repeat_matrix_detections,~,~,~] = angular_error_calc(distance_sc/1000, moon_angle);
+    mat_size = size(repeat_matrix_detections);
+    num_craters = mat_size(1); 
+
+    % Extract statistical quantities from matrix for each crater
+    sc_bearings = repeat_matrix_detections(:, 3);   % (deg) angle from normal to crater
+    std_dev_norm = repeat_matrix_detections(:,2);   % (normalized) standard deviation
+    mean_norm = repeat_matrix_detections(:,1);      % (normalized) mean
+    crater_radius = repeat_matrix_detections(:, 4); % (m)
+
+    % Un-normalize standard deviation and mean values by moon angular area
+    moon_ang_area = 2*rad2deg(asin(1737.4/(distance_sc/1000))); % normalization factor
+    std_dev_unnorm = deg2rad(std_dev_norm*moon_ang_area/100);   % (rad) unnormalized
+    mean_unnorm = deg2rad(mean_norm*moon_ang_area/100);         % (rad) unnormalized
+
+    % Treat ill standard deviation values
+    idx_Nan = find(isnan(std_dev_unnorm)); % finds indices of Nan values
+    std_dev_unnorm(idx_Nan) = [];          % remove Nan values
+    mean_unnorm(idx_Nan) = [];
+    sc_bearings(idx_Nan) = [];
+    crater_radius(idx_Nan) = [];
+
+    idx_zero = find(std_dev_unnorm == 0);  % finds indices of 0 std devs value
+    std_dev_unnorm(idx_zero) = [];         % remove 0 values
+    mean_unnorm(idx_zero) = [];
+    sc_bearings(idx_zero) = [];
+    crater_radius(idx_zero) = [];
+
+    % Select one measurement and expand for visualization
+    bearing_test = sc_bearings(1);
+    std_test = std_dev_unnorm(1);
+
+    % Initialize
+    bearing_error_vec = zeros(1,N);
+    azimuth_error_vec = zeros(1,N);
+    elevation_error_vec = zeros(1,N);
+    
+    for i = 1:N
+        [bearing_error,azimuth_error,elevation_error] = test(r_sc_I,bearing_test,std_test);
+        bearing_error_vec(i) = bearing_error;
+        azimuth_error_vec(i) = azimuth_error;
+        elevation_error_vec(i) = elevation_error;
+    end
+    
+    figure
+    histogram(rad2deg(bearing_error_vec),'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5)
+    box on
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    xlabel('Bearing Angle Measurement Error (deg)')
+    ylabel('Probability Density (%)')
+
+    figure(100)
+    subplot(1,2,1); histogram(rad2deg(azimuth_error_vec),'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5)
+    box on; xlabel('Azmiuth Measurement Error (deg)','FontName','Times New Roman','FontSize',14)
+    subplot(1,2,2); histogram(rad2deg(elevation_error_vec),'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5)
+    box on; xlabel('Elevation Measurement Error (deg)','FontName','Times New Roman','FontSize',14)
+    han=axes(figure(100),'visible','off'); 
+    han.Title.Visible='on';
+    han.XLabel.Visible='on';
+    han.YLabel.Visible='on';
+    ylabel(han,'Probability Density (%)');
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+
+
+end
 
 %% Convergence Experiment
 
@@ -185,7 +270,7 @@ if test_convergence % run if desired
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
     box on
 
-    figure(99)
+    figure % range error
     hold on
     histogram(range_error_LS/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'r')
     histogram(range_error_WLS/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'k')
@@ -196,9 +281,9 @@ if test_convergence % run if desired
     ax.FontName = 'Times New Roman';
     xlabel('Range Error (km)')
     ylabel('Probability Density (%)')
-    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 14)
+    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 18)
 
-    figure(100)
+    figure % absolute range error
     hold on
     histogram(conv_LS_errors/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'r')
     histogram(conv_WLS_errors/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'k')
@@ -209,7 +294,7 @@ if test_convergence % run if desired
     ax.FontName = 'Times New Roman';
     xlabel('Absolute Range Error (km)')
     ylabel('Probability Density (%)')
-    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 14)
+    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 18)
 end
 
 %% Distances Experiment 
@@ -372,8 +457,7 @@ if test_altitudes
     box on
 end
 
-%% Solar Phase Experiment 
-
+%% Solar Phase Experiment
 
 if test_solar_phase
 
@@ -536,7 +620,7 @@ if test_sort
 
     fprintf("------------------------- Sorting Test -------------------------\n")
     
-    distance_sc = 45000*10^3;        % (m) initialize
+    distance_sc = distance_sorting*10^3;           % (m) initialize
     r_sc_I = inertial_uv*(distance_sc); % (m) Inertial position vector
 
     % Get detected crater uncertainty

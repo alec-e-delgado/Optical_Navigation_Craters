@@ -9,17 +9,17 @@ function [std_elevation,std_azimuth,azimuth_meas,elevation_meas, r_crater_LOS_no
 %  then generated
 %
 % INPUTS
-%   r_sc_I        - (m) inertial position of the spacecraft
-%   sc_bearing    - (deg) bearing angles of spacecraft and craters 
-%   std_expanded  - (rad) standard deviation of angular error for each crater 
+%   r_sc_I           - (m) inertial position of the spacecraft
+%   sc_bearing       - (deg) bearing angles of spacecraft and craters 
+%   std_expanded     - (rad) standard deviation of angular error for each crater 
 %
 % OUTPUTS
-%   r_crater_I     - (m) crater position in Inertial reference frame
-%   r_Ecrater_I    - (m) error crater position in Inertial reference frame
-%   azimuth_meas   - (rad) measured azimuth angle in LOS frame
-%   elevation_meas - (rad) measured elevation angle in LOS frame
-%   std_elevation  - (rad) analytical standard deviation of elevation
-%   std_azimuth    - (rad) analytical standard deviation of azimuth
+%   std_elevation    - (rad) analytical standard deviation of elevation angle
+%   std_azimuth      - (rad) analytical standard deviation of azimuth angle
+%   azimuth_meas     - (rad) measured azimuth angle in LOS frame
+%   elevation_meas   - (rad) measured elevation angle in LOS frame
+%   r_crater_LOS_nom - (m)   known location of detected craters
+%   R_aux_LOS_I      - rotation matrix from LOS frame to Inertial frame
 %
 % ADDITIONAL INFORMATION
 %  - theta: a randomly generated angle from the (+) y_aux axis that locates
