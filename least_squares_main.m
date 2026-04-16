@@ -40,7 +40,7 @@ test_solar_phase = false;
 test_sort = false; 
 
 % Convergence Experiment
-distance_conv = 40000;    % (km) run at this altitude
+distance_conv = 10000;    % (km) run at this altitude
 N = 10000;                % runs for Monte Carlo Simulation
 
 % Distances Experiment
@@ -114,9 +114,13 @@ if test_convergence % run if desired
     conv_mean_BCWLS = zeros(1, N);
     conv_std_BCWLS = zeros(1, N);
 
+    range_error_LS = zeros(1,N); % for histogram generation
+    range_error_WLS = zeros(1,N);
+    range_error_BCWLS = zeros(1,N);
+
     for i = 1:N % Monte Carlo iterations
         % Generate angular measurements and get uncertainty
-        [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
+        [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom,R_LOS_I] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
 
         % LS estimate error
         [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
@@ -141,6 +145,15 @@ if test_convergence % run if desired
 
         conv_mean_BCWLS(i) = mean(conv_BCWLS_errors(1:i));
         conv_std_BCWLS(i) = std(conv_BCWLS_errors(1:i),0,2);
+
+        % Rotate position estimates for histogram generation
+        pos_inertial_LS = R_LOS_I*(pos_LS_est-[0;distance_sc;0]);
+        pos_inertial_WLS = R_LOS_I*(pos_WLS_est-[0;distance_sc;0]);
+        pos_inertial_BCWLS = R_LOS_I*(pos_BCWLS_est-[0;distance_sc;0]);
+
+        range_error_LS(i) = norm(pos_inertial_LS) - norm(r_sc_I);
+        range_error_WLS(i) = norm(pos_inertial_WLS) - norm(r_sc_I);
+        range_error_BCWLS(i) = norm(pos_inertial_BCWLS) - norm(r_sc_I);
     
     end
 
@@ -173,7 +186,30 @@ if test_convergence % run if desired
     box on
 
     figure(99)
-    histogram(conv_BCWLS_errors,'Normalization','pdf')
+    hold on
+    histogram(range_error_LS/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'r')
+    histogram(range_error_WLS/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'k')
+    histogram(range_error_BCWLS/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'g','LineStyle','--')
+    box on
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    xlabel('Range Error (km)')
+    ylabel('Probability Density (%)')
+    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 14)
+
+    figure(100)
+    hold on
+    histogram(conv_LS_errors/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'r')
+    histogram(conv_WLS_errors/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'k')
+    histogram(conv_BCWLS_errors/1000,'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5,'BinWidth',.200,'EdgeColor', 'g','LineStyle','--')
+    box on
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
+    xlabel('Absolute Range Error (km)')
+    ylabel('Probability Density (%)')
+    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 14)
 end
 
 %% Distances Experiment 
@@ -248,7 +284,7 @@ if test_altitudes
         for i = 1:N % Monte Carlo iterations
 
             % Generate angular measurements and get uncertainty
-            [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
+            [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom,R_LOS_I] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
     
             % LS estimate error
             [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
@@ -410,7 +446,7 @@ if test_solar_phase
         for i = 1:N % Monte Carlo iterations
 
             % Generate angular measurements and get uncertainty
-            [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
+            [std_elevation,std_azimuth,meas_azimuth,meas_elevation,r_crater_LOS_nom,R_LOS_I] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
     
             % LS estimate error
             [pos_LS_est,LS_error,A_mat,z_mat] = LS_estimate(meas_azimuth,meas_elevation,r_crater_LOS_nom); 
@@ -560,7 +596,7 @@ if test_sort
         for i = 1:N % Monte Carlo iterations
 
         % Generate angular measurements and get uncertainty
-        [std_elevation_og,std_azimuth_og,meas_azimuth_og,meas_elevation_og,r_crater_LOS_nom_og] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
+        [std_elevation_og,std_azimuth_og,meas_azimuth_og,meas_elevation_og,r_crater_LOS_nom_og,R_LOS_I] = crater_pos(r_sc_I,sc_bearings,std_dev_unnorm);
 
         % Sort values by angle std
         [~, idx_sort_std] = sort(std_dev_unnorm,'ascend');
