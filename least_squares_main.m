@@ -171,6 +171,9 @@ if test_convergence % run if desired
     ylabel('STD Range error (km)')
     legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
     box on
+
+    figure(99)
+    histogram(conv_BCWLS_errors,'Normalization','pdf')
 end
 
 %% Distances Experiment 
