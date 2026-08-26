@@ -1,4 +1,4 @@
-function [angular_errors,azimuth_error,elevation_error] = ...
+function [angular_errors,azimuth_error,elevation_error,std_elevation,std_azimuth] = ...
     test(r_sc_I, sc_bearing, std_expanded)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %test
@@ -15,6 +15,8 @@ function [angular_errors,azimuth_error,elevation_error] = ...
 %   angular_errors   - (rad) bearing angle measurement error
 %   azimuth_error    - (rad) azimuth angle measurement error
 %   elevation_error  - (rad) elevation angle measurement error
+%   std_elevation    - (rad) analytical STD of elevation angle
+%   std_azimuth      - (rad) analytical STD of azimuth angle
 %
 % ADDITIONAL INFORMATION
 %  - theta: a randomly generated angle from the (+) y_aux axis that locates

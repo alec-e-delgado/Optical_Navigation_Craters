@@ -39,7 +39,7 @@ close all; clear; clc;
 % Define which tests to run (true or false)
 test_angular_error = true;
 test_convergence = false;
-test_altitudes = false;
+test_distances = false;
 test_solar_phase = false;
 test_sort = false; 
 
@@ -114,11 +114,16 @@ if test_angular_error
     elevation_error_vec = zeros(1,N);
     
     for i = 1:N
-        [bearing_error,azimuth_error,elevation_error] = test(r_sc_I,bearing_test,std_test);
+        [bearing_error,azimuth_error,elevation_error,std_elevation,std_azimuth] = test(r_sc_I,bearing_test,std_test);
         bearing_error_vec(i) = bearing_error;
         azimuth_error_vec(i) = azimuth_error;
         elevation_error_vec(i) = elevation_error;
     end
+
+    % Print standard deviations of all angles
+    fprintf('STD Bearing angle:   %.5f deg\n', rad2deg(std_test))     
+    fprintf('STD Azimuth angle:   %.5f deg\n', rad2deg(std_azimuth))
+    fprintf('STD Elevation angle: %.5f deg\n', rad2deg(std_elevation))
     
     figure
     histogram(rad2deg(bearing_error_vec),'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5)
@@ -126,19 +131,25 @@ if test_angular_error
     ax = gca;
     ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
-    xlabel('Bearing Angle Measurement Error (deg)')
-    ylabel('Probability Density (%)')
+    xlabel('Bearing angle measurement error (deg)')
+    ylabel('Probability density (%)')
 
     figure(100)
     subplot(1,2,1); histogram(rad2deg(azimuth_error_vec),'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5)
-    box on; xlabel('Azmiuth Measurement Error (deg)','FontName','Times New Roman','FontSize',14)
+    box on; xlabel('Azmiuth measurement error (deg)','FontName','Times New Roman','FontSize',14)
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
     subplot(1,2,2); histogram(rad2deg(elevation_error_vec),'Normalization','percentage','DisplayStyle','stairs', 'LineWidth',1.5)
-    box on; xlabel('Elevation Measurement Error (deg)','FontName','Times New Roman','FontSize',14)
+    box on; xlabel('Elevation measurement error (deg)','FontName','Times New Roman','FontSize',14)
+    ax = gca;
+    ax.FontSize = 14;
+    ax.FontName = 'Times New Roman';
     han=axes(figure(100),'visible','off'); 
     han.Title.Visible='on';
     han.XLabel.Visible='on';
     han.YLabel.Visible='on';
-    ylabel(han,'Probability Density (%)');
+    ylabel(han,'Probability density (%)');
     ax = gca;
     ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
@@ -241,6 +252,16 @@ if test_convergence % run if desired
         range_error_BCWLS(i) = norm(pos_inertial_BCWLS) - norm(r_sc_I);
     
     end
+    
+    % Calculatre standard deviations of each estimate method
+    std_LS = std(range_error_LS/1000);       % (km)
+    std_WLS = std(range_error_WLS/1000);
+    std_BCWLS = std(range_error_BCWLS/1000); 
+    
+    % Print standard deviations
+    fprintf('LS STD:    %.3f km \n',std_LS);
+    fprintf('WLS STD:   %.3f km \n',std_WLS);
+    fprintf('BCWLS STD: %.3f km \n',std_BCWLS);
 
     % Plots
 
@@ -253,8 +274,8 @@ if test_convergence % run if desired
     plot(1:N,conv_mean_WLS/1000,'k-','LineWidth', 1.5)
     plot(1:N,conv_mean_BCWLS/1000,'g--','LineWidth', 1.5)
     xlabel('Runs')
-    ylabel('Mean Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    ylabel('Mean absolute range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
     box on
     
     figure % standard deviation
@@ -266,8 +287,8 @@ if test_convergence % run if desired
     plot(1:N,conv_std_WLS/1000,'k-','LineWidth', 1.5)
     plot(1:N,conv_std_BCWLS/1000,'g--','LineWidth', 1.5)
     xlabel('Runs')
-    ylabel('STD Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    ylabel('STD absolute range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
     box on
 
     figure % range error
@@ -280,8 +301,8 @@ if test_convergence % run if desired
     ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     xlabel('Range Error (km)')
-    ylabel('Probability Density (%)')
-    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 18)
+    ylabel('Probability density (%)')
+    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 14)
 
     figure % absolute range error
     hold on
@@ -293,13 +314,13 @@ if test_convergence % run if desired
     ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
     xlabel('Absolute Range Error (km)')
-    ylabel('Probability Density (%)')
-    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 18)
+    ylabel('Probability density (%)')
+    legend('LS','WLS','BCWLS','FontName', 'Times New Roman', 'FontSize', 14)
 end
 
 %% Distances Experiment 
 
-if test_altitudes
+if test_distances
 
     fprintf("------------------------- Distances Test -------------------------\n")
     
@@ -422,9 +443,9 @@ if test_altitudes
     plot(dist_list/1000000,dist_mean_WLS/1000,'k-','LineWidth', 1.5)
     plot(dist_list/1000000,dist_mean_BCWLS/1000,'g--','LineWidth', 1.5)
     xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
-    ylabel('Mean Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
-    box on
+    ylabel('Mean absolute range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
+    box on;
     
     figure % standard deviation
     hold on
@@ -435,26 +456,35 @@ if test_altitudes
     plot(dist_list/1000000,dist_std_WLS/1000,'k-','LineWidth', 1.5)
     plot(dist_list/1000000,dist_std_BCWLS/1000,'g--','LineWidth', 1.5)
     xlabel('Distance (km $\times$ 10$^3$)','Interpreter','latex')
-    ylabel('STD Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
-    box on
+    ylabel('STD absolute range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
+    box on;
 
     fig = figure; % Coordinate errors
     subplot(3,1,1); plot(dist_list/1000000,pos_mean_LOS/1000,'g-','LineWidth', 1.5)
+    ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
     subplot(3,1,2); plot(dist_list/1000000,pos_mean_HCA/1000,'g-','LineWidth', 1.5)
+    ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
     subplot(3,1,3); plot(dist_list/1000000,pos_mean_VCA/1000,'g-','LineWidth', 1.5)
+    ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
     han=axes(fig,'visible','off'); 
-    xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
-    ylabel('Position estimation error (km)')
     han.Title.Visible='on';
     han.XLabel.Visible='on';
     han.YLabel.Visible='on';
-    ylabel(han,'Absolute position estimation error (km)');
+    ylabel(han,'Absolute position error (km)');
     xlabel(han,'Distance (km $\times$ 10$^3$)','Interpreter','latex');
     ax = gca;
     ax.FontSize = 14;
     ax.FontName = 'Times New Roman';
-    box on
+    box on;
+
+    figure % difference between WLS and BCWLS
+    plot(dist_list/1000000,dist_mean_LS/1000,'LineWidth', 1.5)
+    xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
+    ylabel('$\mu_{WLS}-\mu_{BCWLS}$ (m)','Interpreter','latex')
+    ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
+    box on;
+
 end
 
 %% Solar Phase Experiment
@@ -465,8 +495,16 @@ if test_solar_phase
     
     num_solar_phase = (solar_angle_final-solar_angle0)/solar_delta + 1;
     solar_angle = solar_angle0;                   % (deg) Initialize
-    greylevels = linspace(0,0.8,num_solar_phase); % for plotting
     solar_idx = 1;                                % index for plotting
+
+    % Create shades of green for plotting (dark -> light)
+    greens = [0 71 0; % dark
+              0 117 0;
+              0 163 0;
+              0 209 0;
+              0 255 0;
+              138 255 138;
+              184 255 184]/255; % light
     
     while solar_angle <= solar_angle_final 
 
@@ -565,10 +603,10 @@ if test_solar_phase
 
     % Update Solar Angle 
     solar_angle = solar_angle + solar_delta; % (deg)
-
+    
     % Plots
-    shade = [greylevels(solar_idx) greylevels(solar_idx) greylevels(solar_idx)];
-
+    shade = [greens(solar_idx,1) greens(solar_idx,2) greens(solar_idx,3)];
+    
     figure(10) % mean
     hold on
     ax = gca;
@@ -576,7 +614,7 @@ if test_solar_phase
     ax.FontName = 'Times New Roman';
     plot(dist_list/1000000,dist_mean_BCWLS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
     xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
-    ylabel('Mean Range error (km)')
+    ylabel('Mean absolute range error (km)')
     box on
     
     figure(11) % standard deviation
@@ -586,28 +624,26 @@ if test_solar_phase
     ax.FontName = 'Times New Roman';
     plot(dist_list/1000000,dist_std_BCWLS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
     xlabel('Distance (km $\times$ 10$^3$)','Interpreter','latex')
-    ylabel('STD Range error (km)')
+    ylabel('STD absolute range error (km)')
     box on
-
+    
     figure(12) % Coordinate position errors
     subplot(3,1,1); hold on; plot(dist_list/1000000,pos_mean_LOS/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
     subplot(3,1,2); hold on; plot(dist_list/1000000,pos_mean_HCA/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
     subplot(3,1,3); hold on; plot(dist_list/1000000,pos_mean_VCA/1000,'Color',shade,'LineStyle','-.','LineWidth',1.5)
-
+    
     solar_idx = solar_idx+1; % update index value
     end
 
     figure(12)
-    subplot(3,1,1); box on
-    subplot(3,1,2); box on
-    subplot(3,1,3); box on
+    subplot(3,1,1); box on; ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
+    subplot(3,1,2); box on; ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
+    subplot(3,1,3); box on; ax = gca; ax.FontSize = 14; ax.FontName = 'Times New Roman';
     han=axes(figure(12),'visible','off'); 
-    xlabel('Distance (km $\times$ 10$^3$) ','Interpreter','latex')
-    ylabel('Position estimation error (km)')
     han.Title.Visible='on';
     han.XLabel.Visible='on';
     han.YLabel.Visible='on';
-    ylabel(han,'Absolute position estimation error (km)');
+    ylabel(han,'Absolute position error (km)');
     xlabel(han,'Distance (km $\times$ 10$^3$)','Interpreter','latex');
     ax = gca;
     ax.FontSize = 14;
@@ -798,8 +834,8 @@ if test_sort
     plot(3:num_craters,dist_mean_WLS_std(3:end)/1000,'k-','LineWidth', 1.5)
     plot(3:num_craters,dist_mean_BCWLS_std(3:end)/1000,'g--','LineWidth', 1.5)
     xlabel('Number of craters')
-    ylabel('Mean Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    ylabel('Mean absolute range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
     box on
     
     figure % crater radius
@@ -811,8 +847,8 @@ if test_sort
     plot(3:num_craters,dist_mean_WLS_rad(3:end)/1000,'k-','LineWidth', 1.5)
     plot(3:num_craters,dist_mean_BCWLS_rad(3:end)/1000,'g--','LineWidth', 1.5)
     xlabel('Number of craters')
-    ylabel('Mean Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    ylabel('Mean absoulte range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
     box on
 
     figure % azimuth
@@ -824,194 +860,8 @@ if test_sort
     plot(3:num_craters,dist_mean_WLS_az(3:end)/1000,'k-','LineWidth', 1.5)
     plot(3:num_craters,dist_mean_BCWLS_az(3:end)/1000,'g--','LineWidth', 1.5)
     xlabel('Number of craters')
-    ylabel('Mean Range error (km)')
-    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',18)
+    ylabel('Mean absolute range error (km)')
+    legend('LS','WLS','BCWLS', 'FontName','Times New Roman', 'FontSize',14)
     box on
 end
 
-
-
-
-% while altitude_sc <= altitudefinal
-
-% Number of times to run simulation
-
-% Pre allocate space for errors
-% mean_LS = zeros(N, 1);    - Used for first n craters
-% std_LS = zeros(N, 1);
-% 
-% mean_WLS = zeros(N, 1);
-% std_WLS = zeros(N, 1);
-
-% for j = 1:jend
-
-% Need to put above implementation in crater_pos, organize and just
-% extracxt i number of craters
-
-% The azimuth and elevation angles are not the same for each call of the
-% function, thats why it needs to be added within the function, just add it
-% there, sort, and extract the best i craters, use i as input to function
-
-% Pre allocate space
-% LS_errors = zeros(num_craters, N); % For n best craters
-% WLS_errors = zeros(num_craters, N); 
-LS_errors = zeros(1, N); % For altitude/convergence
-WLS_errors = zeros(1, N);
-conv_LS_errors = zeros(1, N);
-conv_std_LS = zeros(1, N);
-conv_mean_WLS = zeros(1, N);
-std_WLS_con = zeros(1, N);
-
-
-% for i = 1:N % Monte Carlo
-% for i = 1 % need minimum three measurements
-    for i = 1:N % num iterations
-    % Pass statistic values 
-    [BCWLS_e, WLS_e, LS_error, r_crater_I, r_crater_aux] = crater_pos(r_sc_I, sc_bearings, std_dev_unnorm, mean_unnorm,crater_radius);
-    
-        LS_errors(:,i) = LS_error(end); % end only for altitude variation
-        WLS_errors(:,i) = WLS_e(end);
-        BCWLS_errors(:,i) = BCWLS_e(end);
-
-        crater_LS(i,:) = LS_error;
-        crater_WLS(i,:) = WLS_e;
-        crater_BCWLS(i,:) = BCWLS_e;
-
-        % mean_LS_con(j) = mean(LS_errors(end,1:j),2);
-        % std_LS_con(j) = std(LS_errors(end,1:j),0,2);
-        % 
-        % mean_WLS_con(j) = mean(WLS_errors(end,1:j),2);
-        % std_WLS_con(j) = std(WLS_errors(end,1:j),0,2);
-    
-    end
-mean_LS(z) = mean(LS_errors,2);
-std_LS(z) = std(LS_errors,0,2);
-mean_crat_LS = mean(crater_LS,1);
-std_crat_LS = std(crater_LS,0,1);
-
-mean_WLS(z) = mean(WLS_errors,2);
-std_WLS(z) = std(WLS_errors,0,2);
-mean_crat_WLS = mean(crater_WLS,1);
-std_crat_WLS = std(crater_WLS,0,1);
-
-mean_BCWLS(z) = mean(BCWLS_errors,2);
-std_BCWLS(z) = std(BCWLS_errors,0,2);
-mean_crat_BCWLS = mean(crater_BCWLS,1);
-std_crat_BCWLS = std(crater_BCWLS,0,1);
-
-fprintf("Iteration: %.d\n", distance_sc)
-
-% Update iterators
-distance_sc = distance_sc + delta_distance; % add 500 m each iteration
-z = z + 1;
-% end
-
-
-% % Scale errors by altitude
-% scaled_LS(:,j) = LS_errors(:,j)/altitude_sc * 100; 
-% scaled_WLS(:,j) = WLS_errors(:,j)/altitude_sc * 100;
-% end
-
-
-
-% Plot histograms for the scaled errors
-
-% figure
-% subplot(2,2,1)
-% hold on
-% histogram(scaled_LS(:,1), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
-% histogram(scaled_WLS(:,1), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
-% title('Scaled Least Squares Errors')
-% xlabel('Error (%)')
-% ylabel('Probability Density')
-% 
-% subplot(2,2,2)
-% hold on
-% histogram(scaled_LS(:,2), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
-% histogram(scaled_WLS(:,2), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
-% title('Scaled Least Squares Errors')
-% xlabel('Error (%)')
-% ylabel('Probability Density')
-% 
-% subplot(2,2,3)
-% hold on
-% histogram(scaled_LS(:,3), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
-% histogram(scaled_WLS(:,3), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
-% title('Scaled Least Squares Errors')
-% xlabel('Error (%)')
-% ylabel('Probability Density')
-% 
-% subplot(2,2,4)
-% hold on
-% histogram(scaled_LS(:,4), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5)
-% histogram(scaled_WLS(:,4), 'Normalization', 'pdf','DisplayStyle','stairs', 'LineWidth',1.5, 'BinWidth', .5, 'LineStyle','--')
-% title('Scaled Least Squares Errors')
-% xlabel('Error (%)')
-% ylabel('Probability Density')
-% 
-% legend('LS', 'WLS')
-
-% Monte Carlo
-% figure
-% hold on
-% plot(1:N, mean_LS_con,'LineWidth', 1.5)
-% plot(1:N,mean_WLS_con,'LineWidth', 1.5)
-% title('Mean convergence ')
-% xlabel('Runs')
-% ylabel('Mean (Absolute error)')
-% legend('LS', 'WLS')
-% 
-% figure
-% hold on
-% plot(1:N,std_LS_con ,'LineWidth', 1.5)
-% plot(1:N,std_WLS_con,'LineWidth', 1.5)
-% title('std convergence ')
-% xlabel('Runs')
-% ylabel('STD (absolute error)')
-% legend('LS', 'WLS')
-% 
-% Sorted Craters
-figure
-hold on
-plot(3:num_craters, mean_crat_LS(3:end)/1000,'LineWidth', 1.5)
-plot(3:num_craters,mean_crat_WLS(3:end)/1000,'LineWidth', 1.5)
-plot(3:num_craters,mean_crat_BCWLS(3:end)/1000,'g-','LineWidth', 1.5)
-title('Mean','FontSize',20,'FontName','Times New Roman')
-xlabel('Num Craters','FontSize',20,'FontName','Times New Roman')
-ylabel('Mean km (Absolute error)','FontSize',20,'FontName','Times New Roman')
-legend('LS', 'WLS','BCWLS','FontSize',20,'FontName','Times New Roman')
-grid on
-
-figure
-hold on
-plot(3:num_craters,std_crat_LS(3:end)/1000 ,'LineWidth', 1.5)
-plot(3:num_craters,std_crat_WLS(3:end)/1000,'LineWidth', 1.5)
-plot(3:num_craters,std_crat_BCWLS(3:end)/1000,'g-','LineWidth', 1.5)
-title('std','FontSize',20,'FontName','Times New Roman')
-xlabel('Num Craters','FontSize',20,'FontName','Times New Roman')
-ylabel('STD km (absolute error)','FontSize',20,'FontName','Times New Roman')
-legend('LS', 'WLS','BCWLS','FontSize',20,'FontName','Times New Roman')
-grid on
-
-altitudevec = ditance0:delta_distance:distance_final;
-
-% Variation over altitude/range
-% figure
-% hold on
-% plot(altitudevec, mean_LS,'LineWidth', 1.5)
-% plot(altitudevec,mean_WLS,'LineWidth', 1.5)
-% plot(altitudevec,mean_BCWLS,'LineWidth',1.5)
-% title('Mean')
-% xlabel('Altitude')
-% ylabel('Mean (Absolute error)')
-% legend('LS', 'WLS','BCWLS')
-% 
-% figure
-% hold on
-% plot(altitudevec,std_LS ,'LineWidth', 1.5)
-% plot(altitudevec,std_WLS,'LineWidth', 1.5)
-% plot(altitudevec,std_BCWLS,'LineWidth',1.5)
-% title('std')
-% xlabel('Altitude')
-% ylabel('STD (absolute error)')
-% legend('LS', 'WLS','BCWLS')
