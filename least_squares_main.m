@@ -37,9 +37,9 @@ close all; clear; clc;
 %% INPUT
 
 % Define which tests to run (true or false)
-test_angular_error = true;
+test_angular_error = false;
 test_convergence = false;
-test_distances = false;
+test_distances = true;
 test_solar_phase = false;
 test_sort = false; 
 
