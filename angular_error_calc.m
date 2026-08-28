@@ -2,8 +2,8 @@ function [angular_errors,repeat_matrix_detections,x_2, y_2, z_2] = angular_error
 %ANGULAR_ERROR_CALC generates angular errors along a normal distribution
 %
 % INPUTS
-%   - distance: the altitude above the lunar surface (m)
-%   - moon_angle: the incidence angle with the lunar surface (degrees)
+%   - distance   - (km) distance from Moon center 
+%   - moon_angle - (deg) the incidence angle with the lunar surface
 %
 % OUTPUTS
 %   - angular_errors: angular errors generated from the statistics
